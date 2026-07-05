@@ -3,7 +3,7 @@ const logger = require('../utils/logger');
 
 // Initialize Gemini Client
 // Requires GEMINI_API_KEY in .env
-const ai = new GoogleGenAI({});
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 /**
  * Analyzes a citizen request using Gemini to extract structured metadata, 
@@ -52,7 +52,7 @@ const analyzeCitizenRequest = async (rawText, nearbyInfrastructure = []) => {
 
     const result = JSON.parse(response.text);
     logger.info(`AI Analysis complete for request category: ${result.category}`);
-    
+
     return result;
   } catch (error) {
     logger.error(`Gemini API Error: ${error.message}`);

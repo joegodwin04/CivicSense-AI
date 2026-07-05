@@ -1,19 +1,39 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { motion } from 'framer-motion';
 import { Brain, MapPin, AlertTriangle, Users, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import MapComponent from '../components/MapComponent';
-
-const mockData = [
-  { name: 'Roads', requests: 400 },
-  { name: 'Water', requests: 300 },
-  { name: 'Power', requests: 200 },
-  { name: 'Health', requests: 278 },
-  { name: 'Edu', requests: 189 },
-];
+import MapComponent from '../components/map/MapComponent';
+import api from '../utils/api';
 
 export default function MPDashboard() {
+  const [categoryData, setCategoryData] = useState([]);
+  const [totals, setTotals] = useState({ totalRequests: 0, unresolved: 0 });
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const loadDashboard = async () => {
+      try {
+        const [statsRes, requestsRes] = await Promise.all([
+          api.get('/dashboard/stats'),
+          api.get('/dashboard/requests?limit=10'),
+        ]);
+
+        setCategoryData(statsRes.data.data.byCategory);
+        setTotals(statsRes.data.data.totals);
+        setRequests(requestsRes.data.data);
+      } catch (err) {
+        setError(err.response?.data?.error || 'Could not load dashboard data. Is the API running?');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDashboard();
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white p-6">
       <nav className="flex justify-between items-center mb-8 border-b border-white/10 pb-4">
@@ -31,16 +51,16 @@ export default function MPDashboard() {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         {[
-          { label: 'Total Requests', value: '1,284', icon: Users, color: 'text-blue-400' },
-          { label: 'AI Clustered Issues', value: '42', icon: Brain, color: 'text-purple-400' },
-          { label: 'Critical Hotspots', value: '7', icon: MapPin, color: 'text-red-400' },
-          { label: 'Avg Sentiment', value: 'Frustrated', icon: AlertTriangle, color: 'text-orange-400' },
+          { label: 'Total Requests', value: totals.totalRequests?.toLocaleString() ?? '0', icon: Users, color: 'text-blue-400' },
+          { label: 'Unresolved', value: totals.unresolved?.toLocaleString() ?? '0', icon: Brain, color: 'text-purple-400' },
+          { label: 'Critical (Priority > 90)', value: requests.filter(r => r.priorityScore > 90).length, icon: MapPin, color: 'text-red-400' },
+          { label: 'Avg Priority', value: totals.avgPriority ? Math.round(totals.avgPriority) : '—', icon: AlertTriangle, color: 'text-orange-400' },
         ].map((stat, i) => (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
-            key={i} 
+            key={i}
             className="p-6 rounded-2xl bg-white/5 border border-white/10"
           >
             <div className="flex justify-between items-start mb-4">
@@ -53,27 +73,34 @@ export default function MPDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.4 }}
           className="col-span-2 p-6 rounded-2xl bg-white/5 border border-white/10"
         >
           <h2 className="text-lg font-semibold mb-6">Category Distribution</h2>
+          {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
           <div className="h-72 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={mockData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
-                <XAxis dataKey="name" stroke="#888" axisLine={false} tickLine={false} />
-                <YAxis stroke="#888" axisLine={false} tickLine={false} />
-                <Tooltip cursor={{fill: 'rgba(255,255,255,0.05)'}} contentStyle={{backgroundColor: '#111', border: '1px solid #333', borderRadius: '8px'}} />
-                <Bar dataKey="requests" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {loading ? (
+              <p className="text-white/40 text-sm">Loading…</p>
+            ) : categoryData.length === 0 ? (
+              <p className="text-white/40 text-sm">No requests yet — once citizens start submitting, categories will show up here.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={categoryData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
+                  <XAxis dataKey="name" stroke="#888" axisLine={false} tickLine={false} />
+                  <YAxis stroke="#888" axisLine={false} tickLine={false} />
+                  <Tooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} contentStyle={{ backgroundColor: '#111', border: '1px solid #333', borderRadius: '8px' }} />
+                  <Bar dataKey="requests" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </motion.div>
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.5 }}
@@ -98,7 +125,7 @@ export default function MPDashboard() {
         </motion.div>
       </div>
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6 }}
@@ -134,31 +161,34 @@ export default function MPDashboard() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {[
-                { issue: "Deep potholes causing accidents", cat: "Roads", loc: "Ward 4, MG Road", score: 98, status: "Pending" },
-                { issue: "No doctor at Primary Health Center", cat: "Health", loc: "Ward 2, Gandhi Nagar", score: 92, status: "Under Review" },
-                { issue: "Contaminated drinking water", cat: "Water", loc: "Ward 7, Lake View", score: 89, status: "Pending" },
-                { issue: "Streetlights not working for 2 weeks", cat: "Power", loc: "Ward 1, Main Market", score: 75, status: "Resolved" }
-              ].map((row, i) => (
-                <tr key={i} className="hover:bg-white/5 transition-colors">
-                  <td className="px-6 py-4 font-medium text-white">{row.issue}</td>
-                  <td className="px-6 py-4"><span className="px-2 py-1 rounded bg-white/10 text-white/80 text-xs">{row.cat}</span></td>
-                  <td className="px-6 py-4 text-white/70">{row.loc}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-full bg-white/10 rounded-full h-1.5 max-w-[60px]">
-                        <div className={`h-1.5 rounded-full ${row.score > 90 ? 'bg-red-500' : row.score > 80 ? 'bg-orange-500' : 'bg-blue-500'}`} style={{ width: `${row.score}%` }}></div>
-                      </div>
-                      <span className="text-white font-medium">{row.score}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${row.status === 'Resolved' ? 'bg-green-500/20 text-green-400' : row.status === 'Pending' ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400'}`}>
-                      {row.status}
-                    </span>
-                  </td>
+              {!loading && requests.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-6 py-8 text-center text-white/40">No requests submitted yet.</td>
                 </tr>
-              ))}
+              )}
+              {requests.map((row) => {
+                const score = row.priorityScore ?? 0;
+                return (
+                  <tr key={row._id} className="hover:bg-white/5 transition-colors">
+                    <td className="px-6 py-4 font-medium text-white">{row.title}</td>
+                    <td className="px-6 py-4"><span className="px-2 py-1 rounded bg-white/10 text-white/80 text-xs">{row.category}</span></td>
+                    <td className="px-6 py-4 text-white/70">{row.location?.address || '—'}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-full bg-white/10 rounded-full h-1.5 max-w-[60px]">
+                          <div className={`h-1.5 rounded-full ${score > 90 ? 'bg-red-500' : score > 80 ? 'bg-orange-500' : 'bg-blue-500'}`} style={{ width: `${score}%` }}></div>
+                        </div>
+                        <span className="text-white font-medium">{score || '—'}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${row.status === 'resolved' ? 'bg-green-500/20 text-green-400' : row.status === 'processing' ? 'bg-yellow-500/20 text-yellow-400' : row.status === 'analyzed' ? 'bg-blue-500/20 text-blue-400' : 'bg-red-500/20 text-red-400'}`}>
+                        {row.status}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

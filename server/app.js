@@ -1,18 +1,13 @@
-require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
-const connectDB = require('./config/db');
-const { errorHandler } = require('./middlewares/errorMiddleware');
+const { errorHandler } = require('./middleware/errorMiddleware');
 const logger = require('./utils/logger');
 
 // Initialize Express
 const app = express();
-
-// Connect to Database
-connectDB();
 
 // --- Security & Utility Middlewares (Enterprise Standard) ---
 // Helmet helps secure Express apps by setting various HTTP headers
@@ -49,8 +44,4 @@ app.use('/api/ai', require('./routes/aiRoutes'));
 // --- Error Handling (Must be after all routes) ---
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, () => {
-  logger.info(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
-});
+module.exports = app;

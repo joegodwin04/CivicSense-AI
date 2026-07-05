@@ -1,0 +1,17 @@
+{
+  "name": "civicsense-ai",
+  "version": "1.0.0",
+  "description": "CivicSenseAI - Decision Support System for Members of Parliament",
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix client\" \"npm run dev --prefix server\"",
+    "start": "npm start --prefix server",
+    "client": "npm run dev --prefix client",
+    "server": "npm run dev --prefix server"
+  },
+  "dependencies": {
+    "mongodb": "^7.4.0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

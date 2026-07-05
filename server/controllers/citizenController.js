@@ -1,14 +1,11 @@
-const express = require('express');
 const asyncHandler = require('express-async-handler');
-const { AppError } = require('../middlewares/errorMiddleware');
+const { AppError } = require('../middleware/errorMiddleware');
 // const RequestModel = require('../models/Request'); // Assuming model exists
-
-const router = express.Router();
 
 // @desc    Submit a new citizen request
 // @route   POST /api/citizen/requests
 // @access  Public (or protected if auth is enforced)
-router.post('/requests', asyncHandler(async (req, res, next) => {
+const submitRequest = asyncHandler(async (req, res, next) => {
   const { title, description, location } = req.body;
 
   if (!title || !description) {
@@ -31,6 +28,8 @@ router.post('/requests', asyncHandler(async (req, res, next) => {
       status: 'processing'
     }
   });
-}));
+});
 
-module.exports = router;
+module.exports = {
+  submitRequest
+};
