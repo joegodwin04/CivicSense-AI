@@ -40,6 +40,14 @@ const submitRequest = asyncHandler(async (req, res, next) => {
     throw new AppError('Please provide a description, image, or voice recording.', 400);
   }
 
+  // Reject garbage/empty whitespace descriptions
+  if (description && !description.trim()) {
+    throw new AppError('Description cannot consist only of whitespace.', 400);
+  }
+  if (description && description.trim().length < 5 && !hasPhoto && !hasAudio) {
+    throw new AppError('Description must be at least 5 characters long.', 400);
+  }
+
   // Parse location or use Bangalore center defaults for testing
   const lat = parseFloat(req.body.latitude) || 12.9716;
   const lng = parseFloat(req.body.longitude) || 77.5946;
@@ -59,6 +67,14 @@ const submitRequest = asyncHandler(async (req, res, next) => {
   if (hasPhoto) {
     inputMethod = 'image';
     const photoFile = req.files['photo'][0];
+
+    // Validate image format
+    const allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedImageTypes.includes(photoFile.mimetype)) {
+      try { fs.unlinkSync(photoFile.path); } catch (err) {}
+      throw new AppError('Invalid image file format. Only JPEG, PNG, WEBP, and GIF are allowed.', 400);
+    }
+
     imageUrl = `/uploads/${photoFile.filename}`;
 
     // Read photo as base64
@@ -77,6 +93,16 @@ const submitRequest = asyncHandler(async (req, res, next) => {
   } else if (hasAudio) {
     inputMethod = 'voice';
     const audioFile = req.files['audio'][0];
+
+    // Validate audio format
+    const allowedAudioTypes = [
+      'audio/webm', 'audio/wav', 'audio/mpeg', 'audio/mp3', 
+      'audio/ogg', 'audio/m4a', 'audio/x-m4a'
+    ];
+    if (!allowedAudioTypes.includes(audioFile.mimetype)) {
+      try { fs.unlinkSync(audioFile.path); } catch (err) {}
+      throw new AppError('Invalid audio file format. Only webm, wav, mp3, ogg, and m4a are allowed.', 400);
+    }
 
     // Read audio as base64
     const audioBuffer = fs.readFileSync(audioFile.path);
