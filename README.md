@@ -1,8 +1,9 @@
 # CivicSense AI
 
-### 🌐 Live Deployment Links
-- **Frontend Client**: [https://civicsense-ai.vercel.app](https://civicsense-ai.vercel.app)
-- **Backend API Server**: [https://civicsense-api.onrender.com](https://civicsense-api.onrender.com)
+🌐 **[LIVE DEMO PORTAL (Vercel)](https://civicsense-ai.vercel.app)** &nbsp;|&nbsp; 🖥️ **[API Server (Render)](https://civicsense-api.onrender.com)**
+
+[![Live Demo](https://img.shields.io/badge/DEMO-LIVE_NOW-purple?style=for-the-badge&logo=vercel)](https://civicsense-ai.vercel.app)
+[![CI Build Status](https://img.shields.io/github/actions/workflow/status/joegodwin04/CivicSense-AI/ci.yml?branch=main&style=for-the-badge&logo=github)](https://github.com/joegodwin04/CivicSense-AI/actions)
 
 ---
 
