@@ -135,3 +135,7 @@ For the "messaging app" input channel integration:
 ### 2. MP Decision Dashboard
 *(Dense analytical grid prioritizing tasks using Gemini AI recommendation logs)*
 ![MP Dashboard](https://raw.githubusercontent.com/joegodwin04/CivicSense-AI/main/client/public/previews/dashboard.png)
+
+### 3. Geolocation Hotspot Map
+*(Consolidated incidents displayed dynamically over geographic constituency boundaries)*
+![Constituency Hotspots](https://raw.githubusercontent.com/joegodwin04/CivicSense-AI/main/client/public/previews/map_hotspots.png)
