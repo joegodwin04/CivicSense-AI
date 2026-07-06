@@ -6,16 +6,16 @@ import RequestForm from '../components/forms/RequestForm';
 import api from '../utils/api';
 
 const benefits = [
-  { icon: Sparkles, label: 'AI Analysis', desc: 'Gemini AI reads & categorizes your report in under 2 seconds', color: 'text-violet-400', bg: 'bg-violet-500/10 border-violet-500/18' },
-  { icon: ShieldCheck, label: 'Anonymous', desc: 'Submit without sharing any personal details — your data stays private', color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/18' },
-  { icon: Clock, label: 'Real-time', desc: "Your MP's office is notified within seconds of submission", color: 'text-cyan-400', bg: 'bg-cyan-500/10 border-cyan-500/18' },
-  { icon: TrendingUp, label: 'Prioritized', desc: 'Your issue is scored and compared with others for urgency', color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/18' },
+  { icon: Sparkles, label: 'AI Triage Analysis', desc: 'Gemini AI structures your report and extracts key details instantly', color: 'text-[#E0A030]', bg: 'bg-[#122438] border-white/10' },
+  { icon: ShieldCheck, label: 'Verified Anonymity', desc: 'File reports securely. No mandatory registration or tracking.', color: 'text-[#E0A030]', bg: 'bg-[#122438] border-white/10' },
+  { icon: Clock, label: 'Real-time Routing', desc: "Your representative's prioritization queue updates automatically.", color: 'text-[#E0A030]', bg: 'bg-[#122438] border-white/10' },
+  { icon: TrendingUp, label: 'Priority Indexing', desc: 'Calculates urgency using localized demographic overlays.', color: 'text-[#E0A030]', bg: 'bg-[#122438] border-white/10' },
 ];
 
 const inputModes = [
-  { icon: Globe, label: 'Any language' },
-  { icon: Camera, label: 'Photo upload' },
-  { icon: Mic, label: 'Voice record' },
+  { icon: Globe, label: '22 Languages' },
+  { icon: Camera, label: 'Photo Upload' },
+  { icon: Mic, label: 'Voice Record' },
 ];
 
 export default function CitizenPortal() {
@@ -28,116 +28,107 @@ export default function CitizenPortal() {
   }, []);
 
   return (
-    <div className="min-h-screen pt-16 relative overflow-hidden">
-      {/* Background */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute inset-0 bg-[#060c18]" />
-        <div className="absolute inset-0 grid-bg opacity-50" />
-        <div className="absolute top-0 right-0 w-[700px] h-[700px] bg-violet-700/7 rounded-full blur-[140px]" />
-        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-blue-700/7 rounded-full blur-[120px]" />
-      </div>
+    <div className="min-h-screen bg-[#0F2A44] pt-16 relative">
+      
+      {/* Grid Pattern */}
+      <div 
+        className="absolute inset-0 opacity-[0.02] pointer-events-none"
+        style={{
+          backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)',
+          backgroundSize: '40px 40px',
+        }}
+      />
 
       <div className="relative z-10 max-w-6xl mx-auto px-6 py-16">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
 
           {/* === LEFT: Info panel === */}
-          <div className="lg:sticky lg:top-24">
+          <div className="lg:sticky lg:top-24 space-y-6">
             <motion.div
-              initial={{ opacity: 0, x: -24 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6 }}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="space-y-6"
             >
               {/* Pill badge */}
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-violet-500/22 bg-violet-500/8 text-violet-300 text-xs font-semibold mb-7">
-                <span className="w-1.5 h-1.5 rounded-full bg-violet-400 pulse-dot flex-shrink-0" />
-                Citizen Voice Portal
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded bg-white/5 border border-white/10 text-white text-xs font-semibold uppercase tracking-wider">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#E0A030]" />
+                Citizen Reporting Hub
               </div>
 
-              <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tight leading-tight mb-5">
-                Your voice shapes
-                <br />
-                <span className="gradient-text-violet">your constituency.</span>
+              <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tight leading-tight font-serif">
+                Your report shapes <br />
+                <span className="text-[#E0A030]">constituency action.</span>
               </h1>
 
-              <p className="text-white/40 text-base leading-relaxed mb-8">
-                Submit civic issues directly to your MP. AI analyzes every report in real-time,
-                ensuring the most critical problems are addressed first.
+              <p className="text-[#E2E8F0] text-base leading-relaxed">
+                Submit local infrastructure issues directly to your Member of Parliament's triage desk. All content is analyzed by translation algorithms and cross-referenced with public infrastructure data.
               </p>
 
               {/* Input mode chips */}
-              <div className="flex flex-wrap gap-2 mb-8">
+              <div className="flex flex-wrap gap-2">
                 {inputModes.map(({ icon: Icon, label }) => (
-                  <div key={label} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.07] text-white/50 text-xs font-medium">
-                    <Icon size={12} className="text-white/35" />
+                  <div key={label} className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-white/5 border border-white/10 text-white/70 text-xs font-semibold uppercase tracking-wider">
+                    <Icon size={12} className="text-[#E0A030]" />
                     {label}
                   </div>
                 ))}
               </div>
 
-              {/* Benefits grid */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* Benefits list (flat cards) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {benefits.map(({ icon: Icon, label, desc, color, bg }, i) => (
-                  <motion.div
+                  <div
                     key={label}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.15 + i * 0.08 }}
-                    className={`p-4 rounded-2xl border ${bg} hover:brightness-110 transition-all`}
+                    className={`p-4 rounded border ${bg} space-y-2`}
                   >
-                    <div className={`w-7 h-7 rounded-xl bg-white/5 flex items-center justify-center mb-3 ${color}`}>
-                      <Icon size={14} />
+                    <div className={`w-8 h-8 rounded-full bg-white/5 flex items-center justify-center ${color}`}>
+                      <Icon size={15} />
                     </div>
-                    <div className="text-white font-semibold text-sm mb-1 leading-tight">{label}</div>
-                    <div className="text-white/30 text-xs leading-relaxed">{desc}</div>
-                  </motion.div>
+                    <h3 className="text-white font-bold text-sm tracking-wide">{label}</h3>
+                    <p className="text-white/60 text-xs leading-relaxed">{desc}</p>
+                  </div>
                 ))}
               </div>
 
-              {/* Live counter */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.6 }}
-                className="mt-7 flex items-center gap-3 p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/12"
-              >
-                <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 pulse-dot flex-shrink-0" />
-                <p className="text-emerald-300/80 text-sm">
+              {/* High Contrast live counter (no pulse glows) */}
+              <div className="p-4 rounded bg-[#122438] border border-[#E0A030]/20 flex items-center gap-3">
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
+                <p className="text-white/80 text-xs font-semibold uppercase tracking-wider">
                   {liveCount !== null ? (
                     <>
-                      <span className="font-bold text-emerald-300">{liveCount.toLocaleString()} </span>
-                      issues submitted this session
+                      <span className="text-[#E0A030] font-bold">{liveCount.toLocaleString()} </span>
+                      active reports tracked in database
                     </>
                   ) : (
-                    <span className="text-emerald-300/50">Live system connected</span>
+                    <span>System Online & Connected</span>
                   )}
                 </p>
-              </motion.div>
+              </div>
+
             </motion.div>
           </div>
 
           {/* === RIGHT: Form === */}
           <motion.div
-            initial={{ opacity: 0, x: 24 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
           >
-            {/* Form card */}
-            <div className="relative">
-              {/* Gradient border glow */}
-              <div className="absolute -inset-px rounded-3xl bg-gradient-to-br from-violet-500/20 via-transparent to-blue-500/15 blur-sm" />
-              <div className="relative bg-[#0b1221]/80 border border-white/[0.08] rounded-3xl p-8 backdrop-blur-xl shadow-2xl">
-                <div className="flex items-center justify-between mb-7">
-                  <div>
-                    <h2 className="text-xl font-bold text-white">Report an Issue</h2>
-                    <p className="text-white/30 text-xs mt-0.5">All fields are optional except description</p>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-[10px] text-emerald-400 font-semibold px-2.5 py-1 rounded-full bg-emerald-500/8 border border-emerald-500/15">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-dot" />
-                    Online
-                  </div>
+            {/* Flat Card Frame */}
+            <div className="bg-[#122438] border border-white/10 rounded p-8">
+              <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-6">
+                <div>
+                  <h2 className="text-xl font-bold text-white font-serif">Report Public Issue</h2>
+                  <p className="text-white/50 text-xs mt-1">Fields are optional unless specified</p>
                 </div>
-                <RequestForm />
+                <div className="flex items-center gap-1.5 text-[10px] text-emerald-400 font-bold uppercase tracking-wider border border-emerald-500/20 bg-emerald-500/5 px-2 py-0.5 rounded">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  Secure Link
+                </div>
               </div>
+              
+              <RequestForm />
             </div>
           </motion.div>
         </div>

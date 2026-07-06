@@ -2,17 +2,14 @@
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 
-export default function Card({ children, className, hover = true, glow, ...props }) {
+export default function Card({ children, className, hover = true, ...props }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       className={clsx(
-        'rounded-2xl bg-white/[0.03] border border-white/[0.06] backdrop-blur-sm transition-all duration-300',
-        hover && 'hover:bg-white/[0.06] hover:border-white/[0.1] hover:-translate-y-0.5',
-        glow === 'blue' && 'hover:shadow-lg hover:shadow-blue-500/10',
-        glow === 'purple' && 'hover:shadow-lg hover:shadow-purple-500/10',
-        glow === 'red' && 'hover:shadow-lg hover:shadow-red-500/10',
+        'rounded bg-[#122438] border border-white/10 transition-all duration-200',
+        hover && 'hover:border-[#E0A030]/50 hover:bg-white/[0.03]',
         className
       )}
       {...props}

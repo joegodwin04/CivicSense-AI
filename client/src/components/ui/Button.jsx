@@ -4,11 +4,11 @@ import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 
 const variants = {
-  primary: 'bg-gradient-to-r from-violet-600 to-violet-500 text-white hover:from-violet-500 hover:to-violet-400 shadow-lg shadow-violet-500/20',
-  secondary: 'bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-white/20',
+  primary: 'bg-[#E0A030] text-[#0F2A44] hover:bg-[#F0B040] border border-[#E0A030]',
+  secondary: 'bg-[#122438] border border-white/10 text-[#E2E8F0] hover:bg-white/5 hover:border-white/20',
   ghost: 'text-white/70 hover:text-white hover:bg-white/5',
-  danger: 'bg-gradient-to-r from-red-600 to-red-500 text-white hover:from-red-500 hover:to-red-400 shadow-lg shadow-red-500/20',
-  success: 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:from-emerald-500 hover:to-emerald-400 shadow-lg shadow-emerald-500/20',
+  danger: 'bg-red-700 border border-red-700 text-white hover:bg-red-600',
+  success: 'bg-emerald-700 border border-emerald-700 text-white hover:bg-emerald-600',
 };
 
 const sizes = {

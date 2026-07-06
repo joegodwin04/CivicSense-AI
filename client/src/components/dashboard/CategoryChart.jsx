@@ -10,11 +10,11 @@ const COLORS = ['#6366f1', '#8b5cf6', '#06b6d4', '#ef4444', '#f59e0b', '#10b981'
 function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-[#0b1221]/97 border border-white/10 rounded-2xl px-4 py-3.5 shadow-2xl backdrop-blur-xl">
-      <p className="text-white/40 text-[11px] font-semibold uppercase tracking-wider mb-1">{label}</p>
-      <p className="text-white font-bold text-xl tabular-nums">
+    <div className="bg-[#122438] border border-white/10 rounded px-4 py-3 shadow-md">
+      <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider mb-1">{label}</p>
+      <p className="text-white font-bold text-lg tabular-nums">
         {payload[0].value}
-        <span className="text-[11px] font-normal text-white/35 ml-1.5">requests</span>
+        <span className="text-[11px] font-normal text-white/40 ml-1.5 font-sans">requests</span>
       </p>
     </div>
   );
@@ -27,14 +27,8 @@ function CustomBar(props) {
     <g>
       <rect
         x={x} y={y} width={width} height={height}
-        fill={fill} fillOpacity={0.7}
-        rx={6} ry={6}
-      />
-      {/* Top glow */}
-      <rect
-        x={x} y={y} width={width} height={Math.min(4, height)}
-        fill={fill} fillOpacity={0.95}
-        rx={6} ry={6}
+        fill={fill} fillOpacity={0.8}
+        rx={2} ry={2}
       />
     </g>
   );

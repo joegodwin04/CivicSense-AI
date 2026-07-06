@@ -19,12 +19,12 @@ export function StatusBadge({ status, className }) {
 }
 
 const categoryColors = {
-  Roads:       'bg-blue-500/15 text-blue-300 border border-blue-500/20',
-  Water:       'bg-cyan-500/15 text-cyan-300 border border-cyan-500/20',
-  Health:      'bg-red-500/15 text-red-300 border border-red-500/20',
-  Education:   'bg-violet-500/15 text-violet-300 border border-violet-500/20',
-  Electricity: 'bg-amber-500/15 text-amber-300 border border-amber-500/20',
-  Sanitation:  'bg-emerald-500/15 text-emerald-300 border border-emerald-500/20',
+  Roads:       'bg-blue-950/20 text-blue-300 border border-blue-800/40',
+  Water:       'bg-cyan-950/20 text-cyan-300 border border-cyan-800/40',
+  Health:      'bg-red-950/20 text-red-300 border border-red-800/40',
+  Education:   'bg-indigo-950/20 text-indigo-300 border border-indigo-800/40',
+  Electricity: 'bg-amber-950/20 text-amber-300 border border-amber-800/40',
+  Sanitation:  'bg-emerald-950/20 text-emerald-300 border border-emerald-800/40',
 };
 
 export function CategoryBadge({ category, className }) {

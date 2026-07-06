@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Zap, LayoutDashboard, Users, Menu, X, LogIn, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, Menu, X, LogIn, LogOut, Shield } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
 export default function Navbar() {
@@ -29,33 +29,31 @@ export default function Navbar() {
 
   return (
     <>
-      <motion.header
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.5, ease: 'easeOut' }}
-        className={`fixed top-0 inset-x-0 z-50 transition-all duration-500 ${
+      <header
+        className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${
           scrolled
-            ? 'bg-[#070d1a]/90 backdrop-blur-2xl border-b border-white/[0.06] shadow-2xl shadow-black/40'
-            : 'bg-transparent'
+            ? 'bg-[#0F2A44] border-b border-white/10 shadow-md'
+            : 'bg-[#0F2A44]/95 border-b border-white/5'
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:shadow-blue-500/50 transition-shadow">
-              <Zap size={16} className="text-white" fill="white" />
+          
+          {/* Logo - Serif Display pairing */}
+          <Link to="/" className="flex items-center gap-2.5 group no-underline">
+            <div className="w-8 h-8 rounded-full bg-[#E0A030] flex items-center justify-center shrink-0">
+              <Shield size={16} className="text-[#0F2A44]" fill="currentColor" />
             </div>
-            <div>
-              <span className="font-bold text-white tracking-tight text-sm leading-none">CivicSense</span>
-              <span className="text-blue-400 font-bold text-sm"> AI</span>
+            <div className="font-serif leading-none">
+              <span className="font-bold text-white text-lg tracking-wide">CivicSense</span>
+              <span className="text-[#E0A030] font-bold text-lg"> AI</span>
             </div>
           </Link>
 
-          {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-3">
+          {/* Desktop nav - No generic blur gradients */}
+          <nav className="hidden md:flex items-center gap-4">
             <Link
               to="/citizen"
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-white/60 hover:text-white hover:bg-white/5 text-sm font-medium transition-all"
+              className="flex items-center gap-2 px-3 py-2 rounded text-white hover:text-[#E0A030] text-sm font-medium transition-colors no-underline"
             >
               <Users size={15} />
               Citizen Portal
@@ -66,21 +64,21 @@ export default function Navbar() {
                 {(user?.role === 'mp' || user?.role === 'admin') && (
                   <Link
                     to="/dashboard"
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 text-white text-sm font-semibold hover:from-blue-500 hover:to-violet-500 transition-all shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30"
+                    className="flex items-center gap-2 px-4 py-2 rounded bg-[#E0A030] text-[#0F2A44] text-sm font-bold hover:bg-[#F0B040] transition-colors no-underline"
                   >
                     <LayoutDashboard size={15} />
                     MP Dashboard
                   </Link>
                 )}
                 
-                {/* User avatar / logout details */}
-                <div className="flex items-center gap-2.5 pl-2 border-l border-white/10">
-                  <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-xs font-semibold text-white uppercase select-none">
+                {/* User badge / logout details */}
+                <div className="flex items-center gap-2.5 pl-3 border-l border-white/10">
+                  <div className="w-8 h-8 rounded bg-white/5 border border-white/15 flex items-center justify-center text-xs font-bold text-white uppercase select-none">
                     {user?.name ? user.name.slice(0, 2) : 'US'}
                   </div>
                   <button
                     onClick={handleLogout}
-                    className="p-2 rounded-lg text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                    className="p-2 rounded text-white/40 hover:text-red-400 transition-colors"
                     title="Log Out"
                   >
                     <LogOut size={16} />
@@ -90,7 +88,7 @@ export default function Navbar() {
             ) : (
               <Link
                 to="/login"
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.04] border border-white/[0.07] text-white/70 hover:text-white hover:bg-white/[0.07] text-sm font-semibold transition-all"
+                className="flex items-center gap-2 px-4 py-2 rounded bg-[#122438] border border-white/10 text-white hover:bg-white/5 text-sm font-bold transition-colors no-underline"
               >
                 <LogIn size={15} />
                 Sign In
@@ -101,7 +99,7 @@ export default function Navbar() {
           {/* Mobile menu toggle */}
           <button
             onClick={() => setMobileOpen((v) => !v)}
-            className="md:hidden w-9 h-9 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition-all"
+            className="md:hidden w-9 h-9 flex items-center justify-center rounded bg-[#122438] border border-white/15 text-white/70 hover:text-white transition-all"
             aria-label="Toggle menu"
           >
             {mobileOpen ? <X size={18} /> : <Menu size={18} />}
@@ -111,16 +109,11 @@ export default function Navbar() {
         {/* Mobile menu */}
         <AnimatePresence>
           {mobileOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="md:hidden bg-[#0a1020]/95 backdrop-blur-2xl border-b border-white/[0.06] overflow-hidden"
-            >
-              <div className="px-4 py-4 space-y-2">
+            <div className="md:hidden bg-[#0F2A44] border-b border-white/10 overflow-hidden">
+              <div className="px-4 py-4 space-y-2.5">
                 <Link
                   to="/citizen"
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white/70 hover:text-white hover:bg-white/5"
+                  className="flex items-center gap-3 px-4 py-3 rounded text-sm font-medium text-white hover:text-[#E0A030] hover:bg-white/5 no-underline"
                 >
                   <Users size={16} />
                   Citizen Portal
@@ -131,7 +124,7 @@ export default function Navbar() {
                     {(user?.role === 'mp' || user?.role === 'admin') && (
                       <Link
                         to="/dashboard"
-                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium bg-gradient-to-r from-blue-600/20 to-violet-600/20 text-blue-300 border border-blue-500/20"
+                        className="flex items-center gap-3 px-4 py-3 rounded text-sm font-bold bg-[#E0A030] text-[#0F2A44] no-underline"
                       >
                         <LayoutDashboard size={16} />
                         MP Dashboard
@@ -139,7 +132,7 @@ export default function Navbar() {
                     )}
                     <button
                       onClick={handleLogout}
-                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 transition-all text-left"
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded text-sm font-medium text-red-400 hover:bg-white/5 transition-colors text-left"
                     >
                       <LogOut size={16} />
                       Log Out ({user?.name})
@@ -148,17 +141,17 @@ export default function Navbar() {
                 ) : (
                   <Link
                     to="/login"
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold bg-gradient-to-r from-blue-600 to-violet-600 text-white"
+                    className="flex items-center gap-3 px-4 py-3 rounded text-sm font-bold bg-[#E0A030] text-[#0F2A44] no-underline"
                   >
                     <LogIn size={16} />
                     Sign In
                   </Link>
                 )}
               </div>
-            </motion.div>
+            </div>
           )}
         </AnimatePresence>
-      </motion.header>
+      </header>
     </>
   );
 }
