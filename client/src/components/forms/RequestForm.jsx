@@ -1,7 +1,7 @@
 // src/components/forms/RequestForm.jsx
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Send, UploadCloud, Mic, MicOff, MapPin, RefreshCw, CheckCircle2, AlertTriangle, Users, Sparkles } from 'lucide-react';
+import { Send, UploadCloud, Mic, MicOff, MapPin, RefreshCw, CheckCircle2, AlertTriangle, Users, Sparkles, Globe } from 'lucide-react';
 import { CATEGORIES } from '../../constants';
 import { useGeolocation } from '../../hooks/useGeolocation';
 import { citizenService } from '../../services/citizenService';
@@ -26,6 +26,7 @@ export default function RequestForm() {
   
   const [isRecording, setIsRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState(null);
+  const [language, setLanguage] = useState('auto');
   
   const fileRef = useRef();
   const mediaRef = useRef();
@@ -254,6 +255,33 @@ export default function RequestForm() {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Language Selector */}
+      <div className="flex items-center justify-between bg-white/[0.02] border border-white/[0.06] rounded-xl px-4 py-2.5 text-xs">
+        <span className="text-white/40 font-medium flex items-center gap-1.5">
+          <Globe size={13} className="text-violet-400" />
+          Submission Language:
+        </span>
+        <select
+          value={language}
+          onChange={(e) => {
+            setLanguage(e.target.value);
+            addNotification({
+              type: 'info',
+              title: 'Language set',
+              message: `Gemini AI translation configured for ${e.target.selectedOptions[0].text}.`
+            });
+          }}
+          className="bg-transparent border-none text-white font-semibold focus:outline-none cursor-pointer"
+        >
+          <option value="auto" className="bg-[#0b1221]">Auto-detect (22+ Languages)</option>
+          <option value="en" className="bg-[#0b1221]">English</option>
+          <option value="hi" className="bg-[#0b1221]">Hindi (हिन्दी)</option>
+          <option value="kn" className="bg-[#0b1221]">Kannada (ಕನ್ನಡ)</option>
+          <option value="te" className="bg-[#0b1221]">Telugu (తెలుగు)</option>
+          <option value="ta" className="bg-[#0b1221]">Tamil (தமிழ்)</option>
+        </select>
       </div>
 
       {/* Description */}

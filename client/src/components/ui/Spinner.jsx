@@ -5,7 +5,7 @@ export default function Spinner({ size = 'md', className }) {
   const sizes = { sm: 'h-4 w-4', md: 'h-6 w-6', lg: 'h-10 w-10', xl: 'h-16 w-16' };
   return (
     <svg
-      className={clsx('animate-spin text-blue-500', sizes[size], className)}
+      className={clsx('animate-spin text-violet-500', sizes[size], className)}
       xmlns="http://www.w3.org/2000/svg"
       fill="none"
       viewBox="0 0 24 24"

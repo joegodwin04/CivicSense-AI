@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 
 const variants = {
-  primary: 'bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-500 hover:to-blue-400 shadow-lg shadow-blue-500/20',
+  primary: 'bg-gradient-to-r from-violet-600 to-violet-500 text-white hover:from-violet-500 hover:to-violet-400 shadow-lg shadow-violet-500/20',
   secondary: 'bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-white/20',
   ghost: 'text-white/70 hover:text-white hover:bg-white/5',
   danger: 'bg-gradient-to-r from-red-600 to-red-500 text-white hover:from-red-500 hover:to-red-400 shadow-lg shadow-red-500/20',
