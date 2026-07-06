@@ -1,7 +1,7 @@
 // src/components/forms/RequestForm.jsx
 import { useState, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Send, UploadCloud, Mic, MicOff, MapPin, RefreshCw, CheckCircle2, X, Image } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Send, UploadCloud, Mic, MicOff, MapPin, RefreshCw, CheckCircle2, AlertTriangle, Users, Sparkles } from 'lucide-react';
 import { CATEGORIES } from '../../constants';
 import { useGeolocation } from '../../hooks/useGeolocation';
 import { citizenService } from '../../services/citizenService';
@@ -19,11 +19,18 @@ export default function RequestForm() {
   const [form, setForm] = useState(INITIAL_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [resultData, setResultData] = useState(null);
+  
   const [photo, setPhoto] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
+  
   const [isRecording, setIsRecording] = useState(false);
+  const [audioBlob, setAudioBlob] = useState(null);
+  
   const fileRef = useRef();
   const mediaRef = useRef();
+  const chunksRef = useRef([]);
+
   const { location, loading: geoLoading, error: geoError, detect } = useGeolocation();
   const { addNotification } = useApp();
 
@@ -48,22 +55,45 @@ export default function RequestForm() {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream);
       mediaRef.current = recorder;
+      chunksRef.current = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunksRef.current.push(e.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        setAudioBlob(blob);
+        addNotification({ 
+          type: 'success', 
+          title: 'Recording saved', 
+          message: 'Audio transcript request ready.' 
+        });
+      };
+
       recorder.start();
       setIsRecording(true);
-      addNotification({ type: 'info', title: 'Recording...', message: 'Click again to stop recording.' });
-      recorder.addEventListener('stop', () => {
-        stream.getTracks().forEach((t) => t.stop());
-        addNotification({ type: 'success', title: 'Recording saved', message: 'Audio attached to your request.' });
+      addNotification({ 
+        type: 'info', 
+        title: 'Recording...', 
+        message: 'Click microphone again to stop.' 
       });
-    } catch {
+    } catch (err) {
       addNotification({ type: 'error', title: 'Microphone blocked', message: 'Please allow microphone access.' });
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.description.trim()) {
-      addNotification({ type: 'warning', title: 'Description required', message: 'Please describe the issue.' });
+    if (!form.description.trim() && !photo && !audioBlob) {
+      addNotification({ 
+        type: 'warning', 
+        title: 'Input required', 
+        message: 'Please provide a text description, photo, or voice recording.' 
+      });
       return;
     }
 
@@ -75,44 +105,127 @@ export default function RequestForm() {
       if (form.name) data.append('name', form.name);
       if (form.phone) data.append('phone', form.phone);
       if (photo) data.append('photo', photo);
+      if (audioBlob) data.append('audio', audioBlob, 'recording.webm');
+      
       if (location) {
         data.append('latitude', location.latitude);
         data.append('longitude', location.longitude);
         data.append('address', location.address);
       }
 
-      await citizenService.submitRequest(data);
+      const res = await citizenService.submitRequest(data);
+      setResultData(res.data);
       setSubmitted(true);
-      addNotification({ type: 'success', title: 'Request submitted!', message: 'Your report has been sent to the MP\'s office.' });
+      addNotification({ 
+        type: 'success', 
+        title: 'Request Analyzed!', 
+        message: res.isDuplicate ? 'Duplicate detected & cataloged.' : 'AI analysis finished and queued.' 
+      });
     } catch (err) {
-      addNotification({ type: 'error', title: 'Submission failed', message: err?.response?.data?.error || 'Please try again.' });
+      addNotification({ 
+        type: 'error', 
+        title: 'Submission failed', 
+        message: err?.response?.data?.error || 'Please try again.' 
+      });
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (submitted) {
+  const resetForm = () => {
+    setForm(INITIAL_FORM);
+    setSubmitted(false);
+    setResultData(null);
+    setPhoto(null);
+    setPhotoPreview(null);
+    setAudioBlob(null);
+    setIsRecording(false);
+  };
+
+  if (submitting) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
+        <div className="relative">
+          <div className="w-16 h-16 rounded-full border-4 border-blue-500/10 border-t-blue-500 animate-spin" />
+          <div className="absolute inset-0 flex items-center justify-center text-blue-400">
+            <Sparkles size={20} className="animate-pulse" />
+          </div>
+        </div>
+        <div>
+          <h4 className="text-white font-semibold text-base mb-1">AI Processing Pipeline Active</h4>
+          <p className="text-white/40 text-xs max-w-xs leading-relaxed">
+            Gemini is translating, classifying, and prioritizing your submission in real-time...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (submitted && resultData) {
+    const isDuplicate = resultData.duplicateCount > 0;
     return (
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="flex flex-col items-center justify-center py-16 gap-5 text-center"
+        className="flex flex-col items-stretch justify-center py-6 gap-5"
       >
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ type: 'spring', stiffness: 200, delay: 0.1 }}
-          className="w-20 h-20 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center"
-        >
-          <CheckCircle2 size={36} className="text-emerald-400" />
-        </motion.div>
-        <div>
-          <h3 className="text-xl font-bold text-white mb-2">Request Submitted!</h3>
-          <p className="text-white/50 text-sm max-w-sm">
-            Your report has been received. Gemini AI will analyze and prioritize it for your MP.
-          </p>
+        <div className="flex flex-col items-center text-center">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: 'spring', stiffness: 200, delay: 0.1 }}
+            className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-4"
+          >
+            <CheckCircle2 size={32} className="text-emerald-400" />
+          </motion.div>
+          <h3 className="text-xl font-bold text-white mb-1">
+            {isDuplicate ? 'Report Logged!' : 'Submission Successful!'}
+          </h3>
+          <p className="text-white/40 text-xs">AI analysis complete</p>
         </div>
-        <Button variant="secondary" size="md" onClick={() => { setForm(INITIAL_FORM); setSubmitted(false); setPhoto(null); setPhotoPreview(null); }}>
+
+        {/* AI Insight Card */}
+        <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-left space-y-4">
+          <div className="flex justify-between items-center border-b border-white/[0.06] pb-3">
+            <div>
+              <p className="text-white/40 text-[10px] uppercase font-bold tracking-wider">Detected Category</p>
+              <p className="text-white font-semibold capitalize text-sm mt-0.5">{resultData.category || 'Other'}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-white/40 text-[10px] uppercase font-bold tracking-wider">Priority Score</p>
+              <p className="text-emerald-400 font-bold text-base mt-0.5">{resultData.priorityScore || '—'}/100</p>
+            </div>
+          </div>
+          
+          <div>
+            <p className="text-white/40 text-[10px] uppercase font-bold tracking-wider">AI Justification & Recommendation</p>
+            <p className="text-white/80 text-xs mt-1 leading-relaxed">{resultData.aiRecommendation || 'No recommendation provided.'}</p>
+          </div>
+
+          {resultData.nearbyInfrastructure && resultData.nearbyInfrastructure.length > 0 && (
+            <div>
+              <p className="text-white/40 text-[10px] uppercase font-bold tracking-wider mb-1">Critical Infrastructure Overlay</p>
+              <div className="flex flex-wrap gap-1">
+                {resultData.nearbyInfrastructure.slice(0, 3).map((infra, idx) => (
+                  <span key={idx} className="px-2 py-0.5 rounded bg-violet-500/10 border border-violet-500/25 text-violet-300 text-[10px]">
+                    {infra}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {isDuplicate && (
+            <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-300 text-xs flex items-center gap-2">
+              <Users size={14} className="shrink-0" />
+              <span>
+                <span className="font-bold text-white">{resultData.duplicateCount}</span> other citizens reported this same issue nearby in the last 14 days. Priority score elevated.
+              </span>
+            </div>
+          )}
+        </div>
+
+        <Button variant="secondary" size="md" onClick={resetForm} className="mx-auto">
           Submit Another
         </Button>
       </motion.div>
@@ -123,7 +236,7 @@ export default function RequestForm() {
     <form onSubmit={handleSubmit} className="space-y-5">
       {/* Category picker */}
       <div>
-        <label className="block text-xs font-semibold text-white/50 uppercase tracking-widest mb-3">Category</label>
+        <label className="block text-xs font-semibold text-white/50 uppercase tracking-widest mb-3">Category (Or let AI classify)</label>
         <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
           {CATEGORIES.map((cat) => (
             <button
@@ -146,14 +259,13 @@ export default function RequestForm() {
       {/* Description */}
       <div>
         <label className="block text-xs font-semibold text-white/50 uppercase tracking-widest mb-3">
-          Describe the Issue <span className="text-red-400">*</span>
+          Describe the Issue <span className="text-white/20 normal-case font-normal">(required if no image/voice)</span>
         </label>
         <textarea
           value={form.description}
           onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-          placeholder="e.g. The road near MG School has deep potholes causing accidents. Water logging during rains..."
+          placeholder="e.g. Deep potholes near St. Mark's School causing traffic jams and bike accidents. Water log in low lying areas..."
           rows={4}
-          required
           className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-3 text-white placeholder-white/20 text-sm focus:outline-none focus:border-blue-500/50 focus:bg-white/[0.05] transition-all resize-none"
         />
         <div className="flex justify-end mt-1">
@@ -168,7 +280,7 @@ export default function RequestForm() {
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
-          className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-xl p-5 text-xs font-medium transition-all ${
+          className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-xl p-5 text-xs font-medium transition-all cursor-pointer ${
             photo
               ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
               : 'border-white/10 text-white/40 hover:border-blue-500/40 hover:bg-blue-500/5 hover:text-blue-300'
@@ -177,7 +289,7 @@ export default function RequestForm() {
           {photoPreview ? (
             <div className="relative w-full flex flex-col items-center gap-1">
               <img src={photoPreview} alt="preview" className="h-12 w-auto rounded-lg object-cover" />
-              <span>Photo added</span>
+              <span className="truncate max-w-[120px]">Photo added</span>
             </div>
           ) : (
             <>
@@ -191,14 +303,30 @@ export default function RequestForm() {
         <button
           type="button"
           onClick={handleRecord}
-          className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-xl p-5 text-xs font-medium transition-all ${
+          className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-xl p-5 text-xs font-medium transition-all cursor-pointer ${
             isRecording
               ? 'border-red-500/40 bg-red-500/10 text-red-300 animate-pulse'
+              : audioBlob
+              ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
               : 'border-white/10 text-white/40 hover:border-red-500/40 hover:bg-red-500/5 hover:text-red-300'
           }`}
         >
-          {isRecording ? <MicOff size={22} /> : <Mic size={22} />}
-          <span>{isRecording ? 'Stop Recording' : 'Voice Record'}</span>
+          {isRecording ? (
+            <>
+              <MicOff size={22} className="text-red-400" />
+              <span>Stop (Recording)</span>
+            </>
+          ) : audioBlob ? (
+            <>
+              <CheckCircle2 size={22} className="text-emerald-400" />
+              <span>Audio attached</span>
+            </>
+          ) : (
+            <>
+              <Mic size={22} />
+              <span>Voice Record</span>
+            </>
+          )}
         </button>
       </div>
 
@@ -207,11 +335,11 @@ export default function RequestForm() {
         <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${location ? 'bg-blue-500/20' : 'bg-white/[0.06]'}`}>
           <MapPin size={16} className={location ? 'text-blue-400' : 'text-white/30'} />
         </div>
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 text-left">
           {location ? (
             <>
-              <p className="text-white text-xs font-semibold mb-0.5">Location detected</p>
-              <p className="text-white/40 text-xs truncate">{location.address}</p>
+              <p className="text-white text-xs font-semibold mb-0.5">Location auto-detected</p>
+              <p className="text-white/40 text-xs truncate" title={location.address}>{location.address}</p>
             </>
           ) : geoError ? (
             <>
@@ -221,7 +349,7 @@ export default function RequestForm() {
           ) : (
             <>
               <p className="text-white/40 text-xs font-medium">Location not detected</p>
-              <p className="text-white/20 text-xs">Click to auto-detect your location</p>
+              <p className="text-white/20 text-xs">Click to auto-detect location</p>
             </>
           )}
         </div>
@@ -229,7 +357,7 @@ export default function RequestForm() {
           type="button"
           onClick={detect}
           disabled={geoLoading}
-          className="shrink-0 text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+          className="shrink-0 text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
         >
           <RefreshCw size={12} className={geoLoading ? 'animate-spin' : ''} />
           {geoLoading ? 'Detecting...' : location ? 'Refresh' : 'Detect'}
@@ -238,7 +366,7 @@ export default function RequestForm() {
 
       {/* Optional contact */}
       <div className="grid grid-cols-2 gap-3">
-        <div>
+        <div className="text-left">
           <label className="block text-xs font-semibold text-white/50 uppercase tracking-widest mb-2">
             Name <span className="text-white/20 normal-case font-normal">(optional)</span>
           </label>
@@ -246,11 +374,11 @@ export default function RequestForm() {
             type="text"
             value={form.name}
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-            placeholder="Your name"
+            placeholder="Anonymous"
             className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:border-blue-500/50 transition-all"
           />
         </div>
-        <div>
+        <div className="text-left">
           <label className="block text-xs font-semibold text-white/50 uppercase tracking-widest mb-2">
             Phone <span className="text-white/20 normal-case font-normal">(optional)</span>
           </label>

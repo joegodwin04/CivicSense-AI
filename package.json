@@ -6,7 +6,9 @@
     "dev": "concurrently \"npm run dev --prefix client\" \"npm run dev --prefix server\"",
     "start": "npm start --prefix server",
     "client": "npm run dev --prefix client",
-    "server": "npm run dev --prefix server"
+    "server": "npm run dev --prefix server",
+    "seed:mp": "npm run seed:mp --prefix server",
+    "seed:data": "npm run seed:data --prefix server"
   },
   "dependencies": {
     "mongodb": "^7.4.0"

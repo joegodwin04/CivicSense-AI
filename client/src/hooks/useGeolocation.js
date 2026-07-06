@@ -16,11 +16,28 @@ export function useGeolocation() {
     }
     setLoading(true);
     setError(null);
+    
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const { latitude, longitude } = pos.coords;
+        const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+
         try {
-          // Reverse geocode using OpenStreetMap Nominatim (free, no key required)
+          if (apiKey && apiKey !== 'YOUR_API_KEY_HERE') {
+            // Google Maps Geocoding API
+            const res = await fetch(
+              `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`
+            );
+            const data = await res.json();
+            if (data.status === 'OK' && data.results && data.results.length > 0) {
+              const address = data.results[0].formatted_address;
+              setLocation({ latitude, longitude, address, raw: data });
+              setLoading(false);
+              return;
+            }
+          }
+          
+          // Fallback to Nominatim OSM if key is missing or failed
           const res = await fetch(
             `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
           );

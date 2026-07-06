@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: civicsense-api
+    env: node
+    plan: free
+    buildCommand: npm install --prefix server
+    startCommand: npm start --prefix server
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: NODE_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: info
+      - key: MONGO_URI
+        placeholder: "Enter MongoDB connection string"
+      - key: GEMINI_API_KEY
+        placeholder: "Enter Gemini API Key from Google AI Studio"
+      - key: JWT_SECRET
+        placeholder: "Enter a secure JWT secret string"
+      - key: CLIENT_URL
+        placeholder: "Enter the Vercel deployed frontend URL"

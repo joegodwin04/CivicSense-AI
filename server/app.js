@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
+const path = require('path');
 const { errorHandler } = require('./middleware/errorMiddleware');
 const logger = require('./utils/logger');
 
@@ -22,6 +23,9 @@ app.use(cors({
 // Body parser
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Static file serving for uploads (images)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // HTTP Request Logging
 app.use(morgan('combined', { stream: { write: message => logger.info(message.trim()) } }));

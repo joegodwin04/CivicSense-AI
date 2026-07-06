@@ -1,0 +1,96 @@
+# CivicSense AI
+
+### Decision Support System for Members of Parliament (MPs)
+
+CivicSense AI is a next-generation civic intelligence dashboard and citizen engagement portal. It enables citizens to report constituency development issues (roads, water, healthcare, sanitation, education) using **text, voice, and image uploads**. Behind the scenes, the system connects directly to **Google Gemini AI** to automatically translate submissions, classify categories, analyze urgency, and cross-reference demographic and proximity data with critical local infrastructure (schools, hospitals, water supplies) to compute a live **Priority Score (1-100)** for decision makers.
+
+---
+
+## 🛠️ System Architecture
+
+```mermaid
+graph TD
+    subgraph Client Application (Vite + React)
+        CP[Citizen Voice Portal] -->|FormData with Text, Images, Voice| APIClient[Axios API Client]
+        MPD[MP Intelligence Dashboard] -->|Auth JWT token| APIClient
+        Map[Google Maps Component] <--|Dynamic Marker Overlay| APIClient
+    end
+
+    subgraph Backend Server (Express + Node.js)
+        APIClient -->|Requests| App[Express app.js]
+        App -->|Multer File Parsing| Router[citizenRoutes / authRoutes / dashboardRoutes]
+        Router -->|Duplicate Detection: 150m radius & 14 days| GeoNear[MongoDB 2dsphere GeoNear]
+        Router -->|Proximity Context| Haversine[Haversine Infra Filter]
+        Router -->|Multimodal Input| Gemini[Google Gemini API]
+    end
+
+    subgraph Database & Cloud
+        GeoNear --> DB[(MongoDB Atlas)]
+        Gemini --> GeminiSDK[gemini-2.5-pro / gemini-2.5-flash]
+    end
+```
+
+### Core Logic Features:
+1. **Multimodal Analysis**: Accepts visual photo inputs (Gemini multimodal vision analysis) and voice inputs (Gemini speech transcription and translation) in local languages.
+2. **Geospatial Deduplication / Clustering**: When a report is submitted, MongoDB runs a `$near` geospatial lookup (150m radius) within the last 14 days. If matched, the report increments the existing report's `duplicateCount` and recomputes the Priority Score using Gemini, preventing duplicate record spam.
+3. **Demographic / Infrastructure Overlay**: Finds local critical infrastructure (schools, hospitals, etc.) within 1km using Haversine calculation, incorporating proximity risk factors into Gemini's prioritization.
+
+---
+
+## 🔑 Required API Keys & Env Variables
+
+Create `.env` files in both directories following the templates:
+
+### Backend Configuration (`server/.env`)
+```env
+PORT=5000
+NODE_ENV=development
+LOG_LEVEL=info
+MONGO_URI=your_mongodb_connection_uri
+GEMINI_API_KEY=your_google_gemini_api_key
+JWT_SECRET=your_jwt_signing_secret
+CLIENT_URL=http://localhost:5173
+```
+
+### Client Configuration (`client/.env`)
+```env
+VITE_GOOGLE_MAPS_API_KEY=your_google_maps_javascript_api_key
+VITE_API_URL=http://localhost:5000/api
+```
+
+---
+
+## 🚀 Setup & Execution
+
+### 1. Install Dependencies
+```bash
+# Install root, client and server packages
+npm install
+npm install --prefix client
+npm install --prefix server
+```
+
+### 2. Seed Demo Accounts & Data
+We supply scripts to populate the database for instant testing/evaluation:
+```bash
+# Seed the MP account (mp@civicsense.ai / password123)
+npm run seed:mp --prefix server
+
+# Seed 12 pre-categorized Bangalore requests with geolocation & duplicates
+npm run seed:data --prefix server
+```
+
+### 3. Run Locally
+```bash
+# Boots both frontend and backend concurrently
+npm run dev
+```
+- **Citizen Portal**: `http://localhost:5173/citizen`
+- **MP Dashboard (Gated)**: `http://localhost:5173/dashboard` (Log in with `mp@civicsense.ai` / `password123`)
+
+---
+
+## 📦 Deployment Configuration
+
+- **Frontend**: Configured for **Vercel** deployment with SPA router redirection set up in `client/vercel.json`.
+- **Backend**: Configured for **Render** deployment with build and variable blueprints set up in `render.yaml`.
