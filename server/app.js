@@ -12,11 +12,17 @@ const app = express();
 
 // --- Security & Utility Middlewares (Enterprise Standard) ---
 // Helmet helps secure Express apps by setting various HTTP headers
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: false,
+  contentSecurityPolicy: false
+}));
 
-// CORS configuration for specific origins in production
+// CORS configuration for dynamic origin mirroring (required when credentials are true)
 app.use(cors({
-  origin: process.env.CLIENT_URL || '*',
+  origin: function (origin, callback) {
+    // Allow any requesting origin dynamically to prevent CORS blocks
+    callback(null, true);
+  },
   credentials: true
 }));
 
