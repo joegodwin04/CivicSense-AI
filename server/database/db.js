@@ -1,5 +1,13 @@
 const mongoose = require("mongoose");
+const dns = require("dns");
 const logger = require("../utils/logger");
+
+// Force Google Public DNS to resolve MongoDB Atlas SRV records
+try {
+  dns.setServers(["8.8.8.8", "8.8.4.4"]);
+} catch (err) {
+  logger.warn(`Failed to set custom DNS servers: ${err.message}`);
+}
 
 const connectDB = async () => {
   try {
