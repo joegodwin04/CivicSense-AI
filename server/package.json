@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js",
+    "test": "node --test test/*.test.js",
     "seed:mp": "node src/scripts/seedMp.js",
     "seed:data": "node src/scripts/seedDemoData.js"
   },

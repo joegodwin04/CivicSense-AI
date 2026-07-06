@@ -1,4 +1,5 @@
 const fs = require('fs');
+const axios = require('axios');
 const path = require('path');
 const asyncHandler = require('express-async-handler');
 const { AppError } = require('../middleware/errorMiddleware');
@@ -172,6 +173,130 @@ const submitRequest = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Submit a new citizen request via WhatsApp (Twilio Webhook)
+// @route   POST /api/citizen/whatsapp
+// @access  Public
+const handleWhatsAppWebhook = asyncHandler(async (req, res, next) => {
+  const { From, Body, NumMedia, MediaUrl0, MediaContentType0 } = req.body;
+
+  const senderNumber = From || 'whatsapp:anonymous';
+  const messageBody = Body || '';
+  const numMedia = parseInt(NumMedia) || 0;
+
+  // Use Bangalore Central defaults for geocoding boundaries
+  const lat = 12.9716;
+  const lng = 77.5946;
+  const address = 'WhatsApp Submission, Ward 4, Bengaluru';
+
+  // Find critical infrastructure within 1km
+  const nearbyInfra = infrastructureList
+    .filter((infra) => getDistance(lat, lng, infra.lat, infra.lng) <= 1000)
+    .map((infra) => `${infra.name} (${infra.type})`);
+
+  let aiResult;
+  let inputMethod = 'whatsapp_text';
+  let imageUrl = null;
+
+  if (numMedia > 0 && MediaUrl0) {
+    inputMethod = 'whatsapp_image';
+    imageUrl = MediaUrl0;
+    
+    // Attempt to download image for multimodal classification
+    try {
+      const response = await axios.get(MediaUrl0, { responseType: 'arraybuffer' });
+      const photoBase64 = Buffer.from(response.data, 'binary').toString('base64');
+      const mimeType = MediaContentType0 || 'image/jpeg';
+      
+      aiResult = await analyzeCitizenImage(
+        photoBase64,
+        mimeType,
+        messageBody || 'Civic issue report via WhatsApp',
+        nearbyInfra,
+        0
+      );
+    } catch (err) {
+      console.error('Failed to parse Twilio media image with Gemini. Falling back to text-only analysis.');
+      aiResult = await analyzeCitizenRequest(
+        messageBody || 'Civic issue report with image attachment via WhatsApp',
+        nearbyInfra,
+        0
+      );
+    }
+  } else {
+    aiResult = await analyzeCitizenRequest(
+      messageBody || 'Civic issue report via WhatsApp',
+      nearbyInfra,
+      0
+    );
+  }
+
+  // Duplicate Check (150m, 14 days, same category)
+  const dateLimit = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+  const duplicate = await Request.findOne({
+    category: aiResult.category,
+    createdAt: { $gte: dateLimit },
+    location: {
+      $near: {
+        $geometry: {
+          type: 'Point',
+          coordinates: [lng, lat]
+        },
+        $maxDistance: 150
+      }
+    }
+  });
+
+  if (duplicate) {
+    duplicate.duplicateCount += 1;
+    const recomputeResult = await analyzeCitizenRequest(
+      duplicate.description,
+      duplicate.nearbyInfrastructure || [],
+      duplicate.duplicateCount
+    );
+    duplicate.priorityScore = recomputeResult.priorityScore;
+    duplicate.aiRecommendation = recomputeResult.aiRecommendation;
+    await duplicate.save();
+  } else {
+    await Request.create({
+      title: `WhatsApp: ${aiResult.category.charAt(0).toUpperCase() + aiResult.category.slice(1)}`,
+      description: messageBody || 'Image report',
+      location: {
+        type: 'Point',
+        coordinates: [lng, lat],
+        address: address
+      },
+      category: aiResult.category,
+      sentiment: aiResult.sentiment,
+      urgencyScore: aiResult.urgencyScore,
+      priorityScore: aiResult.priorityScore,
+      aiRecommendation: aiResult.aiRecommendation,
+      imageUrl: imageUrl,
+      inputMethod: inputMethod,
+      duplicateCount: 0,
+      nearbyInfrastructure: nearbyInfra,
+      phone: senderNumber.replace('whatsapp:', ''),
+      status: 'pending'
+    });
+  }
+
+  // Respond with TwiML XML
+  res.type('text/xml');
+  res.send(`<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Message>
+*CivicSense AI Triage Success*
+-----------------------------
+Thank you for your report. 
+- *Category*: ${aiResult.category.toUpperCase()}
+- *Priority Score*: ${aiResult.priorityScore}/100
+- *Status*: Pending Representative Review
+- *Recommendation*: ${aiResult.aiRecommendation}
+  </Message>
+</Response>`);
+});
+
 module.exports = {
-  submitRequest
+  submitRequest,
+  handleWhatsAppWebhook,
+  getDistance
 };

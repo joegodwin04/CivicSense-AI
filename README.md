@@ -1,5 +1,11 @@
 # CivicSense AI
 
+### 🌐 Live Deployment Links
+- **Frontend Client**: [https://civicsense-ai.vercel.app](https://civicsense-ai.vercel.app)
+- **Backend API Server**: [https://civicsense-api.onrender.com](https://civicsense-api.onrender.com)
+
+---
+
 ### Decision Support System for Members of Parliament (MPs)
 
 CivicSense AI is a next-generation civic intelligence dashboard and citizen engagement portal. It enables citizens to report constituency development issues (roads, water, healthcare, sanitation, education) using **text, voice, and image uploads**. Behind the scenes, the system connects directly to **Google Gemini AI** to automatically translate submissions, classify categories, analyze urgency, and cross-reference demographic and proximity data with critical local infrastructure (schools, hospitals, water supplies) to compute a live **Priority Score (1-100)** for decision makers.
@@ -34,6 +40,7 @@ graph TD
 1. **Multimodal Analysis**: Accepts visual photo inputs (Gemini multimodal vision analysis) and voice inputs (Gemini speech transcription and translation) in local languages.
 2. **Geospatial Deduplication / Clustering**: When a report is submitted, MongoDB runs a `$near` geospatial lookup (150m radius) within the last 14 days. If matched, the report increments the existing report's `duplicateCount` and recomputes the Priority Score using Gemini, preventing duplicate record spam.
 3. **Demographic / Infrastructure Overlay**: Finds local critical infrastructure (schools, hospitals, etc.) within 1km using Haversine calculation, incorporating proximity risk factors into Gemini's prioritization.
+4. **Messaging App Channel (WhatsApp Integration)**: Twilio-compatible Webhook stub at `/api/citizen/whatsapp` accepting incoming text/image payloads, running the exact same geocoding, duplicate checking, and Gemini classification pipelines.
 
 ---
 
@@ -80,7 +87,13 @@ npm run seed:mp --prefix server
 npm run seed:data --prefix server
 ```
 
-### 3. Run Locally
+### 3. Run Unit Tests (Native Node Runner)
+Verify the Haversine distance functions and MongoDB Request schema validation limits:
+```bash
+npm test --prefix server
+```
+
+### 4. Run Locally
 ```bash
 # Boots both frontend and backend concurrently
 npm run dev
@@ -90,7 +103,35 @@ npm run dev
 
 ---
 
+## 📲 WhatsApp Webhook API Blueprints
+
+For the "messaging app" input channel integration:
+* **Endpoint**: `POST /api/citizen/whatsapp`
+* **Content-Type**: `application/x-www-form-urlencoded`
+* **Payload Parameters** (Standard Twilio webhook signature):
+  - `From`: Sender identifier (e.g. `whatsapp:+919876543210`)
+  - `Body`: Complaint description text
+  - `NumMedia`: Optional attachment count (`1`)
+  - `MediaUrl0`: Optional attachment file url (image, document, etc.)
+  - `MediaContentType0`: Attachment MIME type (`image/jpeg`)
+* **Response**: Returns standard TwiML XML confirmation replies immediately back to the WhatsApp screen.
+
+---
+
 ## 📦 Deployment Configuration
 
 - **Frontend**: Configured for **Vercel** deployment with SPA router redirection set up in `client/vercel.json`.
 - **Backend**: Configured for **Render** deployment with build and variable blueprints set up in `render.yaml`.
+- **CI / CD Pipeline**: Managed automatically via `.github/workflows/ci.yml` running lint, testing, and compilation tasks on every commit.
+
+---
+
+## 🖼️ User Interface Previews
+
+### 1. Citizen Portal
+*(Enables high-trust text, photo, and voice complaint filings in any regional language)*
+![Citizen Submission Flow](https://raw.githubusercontent.com/joegodwin04/CivicSense-AI/main/client/public/previews/citizen_portal.png)
+
+### 2. MP Decision Dashboard
+*(Dense analytical grid prioritizing tasks using Gemini AI recommendation logs)*
+![MP Dashboard](https://raw.githubusercontent.com/joegodwin04/CivicSense-AI/main/client/public/previews/dashboard.png)
