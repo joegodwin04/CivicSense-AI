@@ -24,7 +24,9 @@ export default function Login() {
     setLoading(true);
     try {
       const user = await login(email, password);
-      if (user.role === 'mp' || user.role === 'admin') {
+      if (user.role === 'admin') {
+        navigate('/admin');
+      } else if (user.role === 'mp') {
         navigate('/dashboard');
       } else {
         navigate('/citizen');

@@ -60,6 +60,15 @@ export function AppProvider({ children }) {
       const response = await api.post('/auth/register', userDataInput);
       const { token: jwtToken, ...userData } = response.data.data;
       
+      if (userData.isPending) {
+        addNotification({ 
+          type: 'info', 
+          title: 'Registration Pending Approval', 
+          message: 'Your MP account registration is pending admin approval. You will be able to log in once verified.' 
+        });
+        return userData;
+      }
+
       localStorage.setItem('token', jwtToken);
       localStorage.setItem('user', JSON.stringify(userData));
       

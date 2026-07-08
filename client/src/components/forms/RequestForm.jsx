@@ -1,5 +1,5 @@
 // src/components/forms/RequestForm.jsx
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Send, UploadCloud, Mic, MicOff, MapPin, RefreshCw, CheckCircle2, AlertTriangle, Users, Sparkles, Globe } from 'lucide-react';
 import { CATEGORIES } from '../../constants';
@@ -34,6 +34,19 @@ export default function RequestForm() {
 
   const { location, loading: geoLoading, error: geoError, detect } = useGeolocation();
   const { addNotification } = useApp();
+
+  const [isManual, setIsManual] = useState(false);
+  const [manualLocation, setManualLocation] = useState({
+    address: '',
+    latitude: '',
+    longitude: ''
+  });
+
+  useEffect(() => {
+    if (geoError) {
+      setIsManual(true);
+    }
+  }, [geoError]);
 
   const handleFile = (e) => {
     const file = e.target.files?.[0];
@@ -108,7 +121,20 @@ export default function RequestForm() {
       if (photo) data.append('photo', photo);
       if (audioBlob) data.append('audio', audioBlob, 'recording.webm');
       
-      if (location) {
+      if (isManual) {
+        if (!manualLocation.address.trim()) {
+          addNotification({
+            type: 'warning',
+            title: 'Location required',
+            message: 'Please fill in the manual address/location.'
+          });
+          setSubmitting(false);
+          return;
+        }
+        data.append('latitude', manualLocation.latitude ? parseFloat(manualLocation.latitude) : 12.9716);
+        data.append('longitude', manualLocation.longitude ? parseFloat(manualLocation.longitude) : 77.5946);
+        data.append('address', manualLocation.address);
+      } else if (location) {
         data.append('latitude', location.latitude);
         data.append('longitude', location.longitude);
         data.append('address', location.address);
@@ -358,37 +384,122 @@ export default function RequestForm() {
           Step 4: Location Verification
         </label>
         
-        <div className="flex items-center gap-3 p-3.5 rounded bg-[#0B0F19] border border-white/10">
-          <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center shrink-0">
-            <MapPin size={15} className="text-[#E0A030]" />
+        <div className="flex flex-col gap-3 p-3.5 rounded bg-[#0B0F19] border border-white/10">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center shrink-0">
+              <MapPin size={15} className="text-[#E0A030]" />
+            </div>
+            <div className="flex-1 min-w-0 text-left text-xs">
+              {location && !isManual ? (
+                <>
+                  <p className="text-white font-bold uppercase text-[9px]">Verified Coordinates</p>
+                  <p className="text-[#94A3B8] truncate mt-0.5" title={location.address}>{location.address}</p>
+                </>
+              ) : geoError && !isManual ? (
+                <>
+                  <p className="text-red-400 font-bold uppercase text-[9px]">Location Error</p>
+                  <p className="text-white/40 truncate mt-0.5">{geoError}</p>
+                </>
+              ) : isManual ? (
+                <>
+                  <p className="text-[#E0A030] font-bold uppercase text-[9px]">Manual Location Mode</p>
+                  <p className="text-white/40 truncate mt-0.5">Please specify location details below</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-white/40 font-bold uppercase text-[9px]">Awaiting Location</p>
+                  <p className="text-white/20 truncate mt-0.5">Click verify to attach map coordinates</p>
+                </>
+              )}
+            </div>
+            <div className="flex items-center gap-3 shrink-0">
+              {!isManual && (
+                <button
+                  type="button"
+                  onClick={detect}
+                  disabled={geoLoading}
+                  className="text-xs font-bold text-[#E0A030] hover:text-[#F0B040] transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                >
+                  <RefreshCw size={12} className={geoLoading ? 'animate-spin' : ''} />
+                  {geoLoading ? 'Verifying...' : location ? 'Refresh' : 'Verify'}
+                </button>
+              )}
+              {isManual && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsManual(false);
+                  }}
+                  className="text-xs font-bold text-[#94A3B8] hover:text-white transition-colors cursor-pointer"
+                >
+                  Use Auto
+                </button>
+              )}
+            </div>
           </div>
-          <div className="flex-1 min-w-0 text-left text-xs">
-            {location ? (
-              <>
-                <p className="text-white font-bold uppercase text-[9px]">Verified Coordinates</p>
-                <p className="text-[#94A3B8] truncate mt-0.5" title={location.address}>{location.address}</p>
-              </>
-            ) : geoError ? (
-              <>
-                <p className="text-red-400 font-bold uppercase text-[9px]">Location Error</p>
-                <p className="text-white/40 truncate mt-0.5">{geoError}</p>
-              </>
-            ) : (
-              <>
-                <p className="text-white/40 font-bold uppercase text-[9px]">Awaiting Location</p>
-                <p className="text-white/20 truncate mt-0.5">Click verify to attach map coordinates</p>
-              </>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={detect}
-            disabled={geoLoading}
-            className="shrink-0 text-xs font-bold text-[#E0A030] hover:text-[#F0B040] transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
-          >
-            <RefreshCw size={12} className={geoLoading ? 'animate-spin' : ''} />
-            {geoLoading ? 'Verifying...' : location ? 'Refresh' : 'Verify'}
-          </button>
+
+          {/* Manual Input Fields Box */}
+          {isManual && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="border-t border-white/5 pt-3 mt-1 space-y-3 text-left"
+            >
+              <div className="space-y-1">
+                <label className="block text-[10px] font-bold text-white/50 uppercase tracking-wider">
+                  Address / Landmark / Ward Name *
+                </label>
+                <input
+                  type="text"
+                  required={isManual}
+                  value={manualLocation.address}
+                  onChange={(e) => setManualLocation(prev => ({ ...prev, address: e.target.value }))}
+                  placeholder="e.g. Ward 4, Outer Ring Road, near Metro station"
+                  className="w-full bg-[#0F2A44] border border-white/10 rounded px-3 py-2 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#E0A030] transition-colors"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-bold text-white/50 uppercase tracking-wider">
+                    Latitude (Optional)
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={manualLocation.latitude}
+                    onChange={(e) => setManualLocation(prev => ({ ...prev, latitude: e.target.value }))}
+                    placeholder="e.g. 12.9716"
+                    className="w-full bg-[#0F2A44] border border-white/10 rounded px-3 py-2 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#E0A030] transition-colors"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-bold text-white/50 uppercase tracking-wider">
+                    Longitude (Optional)
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={manualLocation.longitude}
+                    onChange={(e) => setManualLocation(prev => ({ ...prev, longitude: e.target.value }))}
+                    placeholder="e.g. 77.5946"
+                    className="w-full bg-[#0F2A44] border border-white/10 rounded px-3 py-2 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#E0A030] transition-colors"
+                  />
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {!isManual && !location && (
+            <div className="text-right">
+              <button
+                type="button"
+                onClick={() => setIsManual(true)}
+                className="text-[10px] text-white/40 hover:text-[#E0A030] transition-colors underline cursor-pointer"
+              >
+                Or enter location details manually
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

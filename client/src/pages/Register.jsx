@@ -23,6 +23,15 @@ export default function Register() {
       setError('Please fill in all fields.');
       return;
     }
+
+    if (role === 'mp') {
+      const isGovEmail = email.endsWith('@gov.in') || email.endsWith('@nic.in');
+      if (!isGovEmail) {
+        setError('MPs must register with a government email ending in @gov.in or @nic.in');
+        return;
+      }
+    }
+
     setError('');
     setLoading(true);
     try {
@@ -33,7 +42,12 @@ export default function Register() {
         role,
         constituency
       });
-      if (user.role === 'mp' || user.role === 'admin') {
+      
+      if (user.isPending) {
+        navigate('/login');
+      } else if (user.role === 'admin') {
+        navigate('/admin');
+      } else if (user.role === 'mp') {
         navigate('/dashboard');
       } else {
         navigate('/citizen');

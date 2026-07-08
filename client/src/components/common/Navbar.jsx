@@ -61,7 +61,16 @@ export default function Navbar() {
 
             {isAuthenticated ? (
               <>
-                {(user?.role === 'mp' || user?.role === 'admin') && (
+                {user?.role === 'admin' && (
+                  <Link
+                    to="/admin"
+                    className="flex items-center gap-2 px-4 py-2 rounded bg-[#E0A030] text-[#0F2A44] text-sm font-bold hover:bg-[#F0B040] transition-colors no-underline"
+                  >
+                    <LayoutDashboard size={15} />
+                    Admin Platform
+                  </Link>
+                )}
+                {user?.role === 'mp' && (
                   <Link
                     to="/dashboard"
                     className="flex items-center gap-2 px-4 py-2 rounded bg-[#E0A030] text-[#0F2A44] text-sm font-bold hover:bg-[#F0B040] transition-colors no-underline"
@@ -121,7 +130,16 @@ export default function Navbar() {
 
                 {isAuthenticated ? (
                   <>
-                    {(user?.role === 'mp' || user?.role === 'admin') && (
+                    {user?.role === 'admin' && (
+                      <Link
+                        to="/admin"
+                        className="flex items-center gap-3 px-4 py-3 rounded text-sm font-bold bg-[#E0A030] text-[#0F2A44] no-underline"
+                      >
+                        <LayoutDashboard size={16} />
+                        Admin Platform
+                      </Link>
+                    )}
+                    {user?.role === 'mp' && (
                       <Link
                         to="/dashboard"
                         className="flex items-center gap-3 px-4 py-3 rounded text-sm font-bold bg-[#E0A030] text-[#0F2A44] no-underline"

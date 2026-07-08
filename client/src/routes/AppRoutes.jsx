@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import LandingPage from '../pages/LandingPage';
 import CitizenPortal from '../pages/CitizenPortal';
 import MPDashboard from '../pages/MPDashboard';
+import AdminDashboard from '../pages/AdminDashboard';
 import Login from '../pages/Login';
 import Register from '../pages/Register';
 import PublicLayout from '../layouts/PublicLayout';
@@ -62,9 +63,19 @@ export default function AppRoutes() {
       <Route
         path="/dashboard"
         element={
-          <ProtectedRoute allowedRoles={['mp', 'admin']}>
+          <ProtectedRoute allowedRoles={['mp']}>
             <DashboardLayout>
               <MPDashboard />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <DashboardLayout>
+              <AdminDashboard />
             </DashboardLayout>
           </ProtectedRoute>
         }
