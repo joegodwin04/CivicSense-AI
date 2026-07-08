@@ -25,12 +25,40 @@ const requestSchema = new mongoose.Schema(
       address: {
         type: String,
         default: ''
+      },
+      landmark: {
+        type: String,
+        default: ''
+      },
+      locality: {
+        type: String,
+        default: ''
+      },
+      ward: {
+        type: String,
+        default: ''
+      },
+      city: {
+        type: String,
+        default: ''
+      },
+      district: {
+        type: String,
+        default: ''
+      },
+      state: {
+        type: String,
+        default: ''
+      },
+      postalCode: {
+        type: String,
+        default: ''
       }
     },
     status: {
       type: String,
-      enum: ['processing', 'pending', 'under-review', 'resolved'],
-      default: 'processing'
+      enum: ['processing', 'pending', 'under-review', 'resolved', 'rejected'],
+      default: 'pending'
     },
     category: {
       type: String,
@@ -86,7 +114,22 @@ const requestSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Request',
       default: null
-    }
+    },
+    aiImpactEstimate: {
+      type: String,
+      default: ''
+    },
+    suggestedSchemes: {
+      type: [String],
+      default: []
+    },
+    statusHistory: [
+      {
+        status: { type: String, required: true },
+        updatedAt: { type: Date, default: Date.now },
+        notes: { type: String, default: '' }
+      }
+    ]
   },
   { timestamps: true }
 );

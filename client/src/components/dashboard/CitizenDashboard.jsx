@@ -1,9 +1,10 @@
 // src/components/dashboard/CitizenDashboard.jsx
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   PlusCircle, LayoutList, 
-  FileText, Clock, PlayCircle, CheckCircle2, XCircle, AlertTriangle, Layers
+  FileText, Clock, PlayCircle, CheckCircle2, XCircle, AlertTriangle, Layers, Bell 
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import api from '../../utils/api';
@@ -21,6 +22,7 @@ export default function CitizenDashboard() {
   const [error, setError] = useState(null);
   const [stats, setStats] = useState({ total: 0, pending: 0, processing: 0, 'under-review': 0, resolved: 0, rejected: 0 });
   const [requests, setRequests] = useState([]);
+  const [notifications, setNotifications] = useState([]);
   
   // View toggle: 'dashboard' | 'new_complaint' | 'all_requests'
   const [view, setView] = useState('dashboard');
@@ -29,12 +31,14 @@ export default function CitizenDashboard() {
     if (!silent) setLoading(true);
     setError(null);
     try {
-      const [statsRes, reqsRes] = await Promise.all([
+      const [statsRes, reqsRes, notifsRes] = await Promise.all([
         api.get('/citizen/my-stats'),
-        api.get('/citizen/my-requests')
+        api.get('/citizen/my-requests'),
+        api.get('/citizen/notifications').catch(() => ({ data: { data: [] } }))
       ]);
       setStats(statsRes.data.data);
       setRequests(reqsRes.data.data);
+      setNotifications(notifsRes.data.data || []);
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
       setError('Failed to sync dashboard intelligence. Please try again.');
@@ -62,7 +66,7 @@ export default function CitizenDashboard() {
           <h2 className="text-2xl font-bold text-white font-serif">Submit New Report</h2>
           <button 
             onClick={() => { setView('dashboard'); loadData(true); }}
-            className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded text-sm font-bold border border-white/10 transition-colors"
+            className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded text-sm font-bold border border-white/10 transition-colors cursor-pointer"
           >
             Cancel
           </button>
@@ -79,12 +83,12 @@ export default function CitizenDashboard() {
 
   if (view === 'all_requests') {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 text-left">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold text-white font-serif">All My Requests</h2>
           <button 
             onClick={() => setView('dashboard')}
-            className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded text-sm font-bold border border-white/10 transition-colors"
+            className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded text-sm font-bold border border-white/10 transition-colors cursor-pointer"
           >
             Back to Dashboard
           </button>
@@ -98,7 +102,7 @@ export default function CitizenDashboard() {
     <div className="space-y-8">
       {/* 1. Welcome Section & Quick Actions */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
+        <div className="text-left">
           <h1 className="text-3xl font-bold text-white font-serif">Welcome back, {user?.name || 'Citizen'}</h1>
           <p className="text-[#94A3B8] text-sm mt-1">Here's an overview of your civic requests.</p>
         </div>
@@ -106,7 +110,7 @@ export default function CitizenDashboard() {
         <div className="flex flex-wrap gap-3">
           <button 
             onClick={() => setView('new_complaint')}
-            className="flex items-center gap-2 px-4 py-2 bg-[#E0A030] hover:bg-[#F0B040] text-[#0F2A44] font-bold text-sm rounded shadow-[0_0_15px_rgba(224,160,48,0.3)] transition-all"
+            className="flex items-center gap-2 px-4 py-2 bg-[#E0A030] hover:bg-[#F0B040] text-[#0F2A44] font-bold text-sm rounded shadow-[0_0_15px_rgba(224,160,48,0.3)] transition-all cursor-pointer"
           >
             <PlusCircle size={16} />
             New Complaint
@@ -114,7 +118,7 @@ export default function CitizenDashboard() {
           
           <button 
             onClick={() => setView('all_requests')}
-            className="flex items-center gap-2 px-4 py-2 bg-[#122438] hover:bg-white/5 border border-white/10 text-white font-bold text-sm rounded transition-all"
+            className="flex items-center gap-2 px-4 py-2 bg-[#122438] hover:bg-white/5 border border-white/10 text-white font-bold text-sm rounded transition-all cursor-pointer"
           >
             <LayoutList size={16} />
             All Requests
@@ -172,7 +176,7 @@ export default function CitizenDashboard() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1, duration: 0.3 }}
-              className="relative p-5 bg-[#122438] border border-white/10 rounded h-full"
+              className="relative p-5 bg-[#122438] border border-white/10 rounded h-full text-left"
             >
               <div className="flex items-start justify-between mb-3">
                 <span className="text-white/40 text-[10px] font-bold uppercase tracking-widest leading-none">Other Status</span>
@@ -198,7 +202,7 @@ export default function CitizenDashboard() {
       </div>
 
       {/* 3. Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 text-left">
         {/* Status Distribution */}
         <div className="col-span-1 bg-[#122438] border border-white/10 rounded p-6">
           <h2 className="text-sm font-bold text-white uppercase tracking-wider font-serif mb-6">Status Distribution</h2>
@@ -212,37 +216,100 @@ export default function CitizenDashboard() {
         </div>
       </div>
 
-      {/* 4. Recent Requests */}
-      <div className="bg-[#122438] border border-white/10 rounded overflow-hidden">
-        <div className="px-6 py-5 border-b border-white/10 flex items-center justify-between">
-          <div>
-            <h2 className="text-base font-bold text-white font-serif">Recent Requests</h2>
-            <p className="text-[#94A3B8] text-xs mt-0.5">Your latest reports and their statuses</p>
+      {/* 4. Recent Requests & Notification Feed */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 text-left">
+        
+        {/* Recent Requests (8 cols) */}
+        <div className="lg:col-span-8 bg-[#122438] border border-white/10 rounded overflow-hidden h-fit">
+          <div className="px-6 py-5 border-b border-white/10 flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-bold text-white font-serif">Recent Requests</h2>
+              <p className="text-[#94A3B8] text-xs mt-0.5">Your latest reports and their statuses</p>
+            </div>
+            {view === 'dashboard' && requests.length > 5 && (
+              <button 
+                onClick={() => setView('all_requests')}
+                className="text-xs font-bold text-[#E0A030] hover:text-white transition-colors uppercase tracking-wider cursor-pointer"
+              >
+                View All
+              </button>
+            )}
           </div>
-          {view === 'dashboard' && requests.length > 5 && (
-            <button 
-              onClick={() => setView('all_requests')}
-              className="text-xs font-bold text-[#E0A030] hover:text-white transition-colors uppercase tracking-wider"
-            >
-              View All
-            </button>
+          
+          {loading ? (
+            <div className="p-12 flex justify-center">
+              <div className="w-8 h-8 rounded-full border-2 border-blue-500/20 border-t-blue-500 animate-spin" />
+            </div>
+          ) : requests.length === 0 ? (
+            <div className="p-12 text-center text-white/40 text-sm">
+              You haven't submitted any civic requests yet.
+            </div>
+          ) : (
+            <RequestsTable 
+              requests={view === 'dashboard' ? requests.slice(0, 5) : requests} 
+              loading={loading} 
+            />
           )}
         </div>
-        
-        {loading ? (
-          <div className="p-12 flex justify-center">
-            <div className="w-8 h-8 rounded-full border-2 border-blue-500/20 border-t-blue-500 animate-spin" />
+
+        {/* Notification History Feed (4 cols) */}
+        <div className="lg:col-span-4 bg-[#122438] border border-white/10 rounded p-6 flex flex-col h-fit">
+          <h2 className="text-sm font-bold text-white uppercase tracking-wider font-serif pb-3 border-b border-white/5 flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <Bell size={13} className="text-[#E0A030]" />
+              Alert History
+            </span>
+            {notifications.some(n => !n.read) && (
+              <button
+                onClick={async () => {
+                  try {
+                    await api.patch('/citizen/notifications/read-all');
+                    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+                  } catch (err) {
+                    console.error('Failed to read all notifications:', err);
+                  }
+                }}
+                className="text-[9px] text-[#E0A030] hover:text-white transition-colors uppercase font-bold cursor-pointer"
+              >
+                Mark all read
+              </button>
+            )}
+          </h2>
+          
+          <div className="mt-4 space-y-3 max-h-[360px] overflow-y-auto pr-1">
+            {notifications.length === 0 ? (
+              <p className="text-white/45 text-xs py-10 text-center">No recent alerts recorded.</p>
+            ) : (
+              notifications.map((notif) => (
+                <div 
+                  key={notif._id} 
+                  className={`p-3 rounded border text-xs text-left relative transition-colors ${
+                    notif.read 
+                      ? 'bg-[#0F2A44]/40 border-white/5 text-white/60' 
+                      : 'bg-[#0F2A44] border-[#E0A030]/20 text-white'
+                  }`}
+                >
+                  {!notif.read && (
+                    <span className="absolute top-3 right-3 w-1.5 h-1.5 rounded-full bg-[#E0A030]" />
+                  )}
+                  <p className="font-semibold leading-normal pr-3">{notif.message}</p>
+                  <div className="flex items-center justify-between gap-2 mt-2.5 text-[9px] text-[#94A3B8] font-bold">
+                    <span>{new Date(notif.createdAt).toLocaleDateString()}</span>
+                    {notif.request && (
+                      <Link 
+                        to={`/requests/${notif.request._id || notif.request}`}
+                        className="text-[#E0A030] hover:underline"
+                      >
+                        View Details
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
-        ) : requests.length === 0 ? (
-          <div className="p-12 text-center text-white/40 text-sm">
-            You haven't submitted any civic requests yet.
-          </div>
-        ) : (
-          <RequestsTable 
-            requests={view === 'dashboard' ? requests.slice(0, 5) : requests} 
-            loading={loading} 
-          />
-        )}
+        </div>
+
       </div>
 
     </div>

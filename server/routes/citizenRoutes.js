@@ -2,7 +2,18 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { submitRequest, handleWhatsAppWebhook, getMyRequests, getMyStats } = require('../controllers/citizenController');
+const { 
+  submitRequest, 
+  handleWhatsAppWebhook, 
+  getMyRequests, 
+  getMyStats,
+  getRequestDetails,
+  updateRequest,
+  resubmitRequest,
+  getMyNotifications,
+  markNotificationRead,
+  markAllNotificationsRead
+} = require('../controllers/citizenController');
 const { getRequests } = require('../controllers/dashboardController');
 const { protect, optionalProtect } = require('../middleware/authMiddleware');
 
@@ -53,5 +64,15 @@ router.get('/requests', getRequests);
 // @route   POST /api/citizen/whatsapp
 // @access  Public
 router.post('/whatsapp', express.urlencoded({ extended: true }), handleWhatsAppWebhook);
+
+// Single request management
+router.get('/requests/:id', protect, getRequestDetails);
+router.put('/requests/:id', protect, updateRequest);
+router.post('/requests/:id/resubmit', protect, resubmitRequest);
+
+// Notifications management
+router.get('/notifications', protect, getMyNotifications);
+router.patch('/notifications/:id/read', protect, markNotificationRead);
+router.patch('/notifications/read-all', protect, markAllNotificationsRead);
 
 module.exports = router;

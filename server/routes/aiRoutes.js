@@ -1,6 +1,7 @@
 const express = require('express');
+const { handleChat } = require('../controllers/aiController');
 const router = express.Router();
 
-// TODO: Define AI analysis and prioritization endpoints
+router.post('/chat', handleChat);
 
 module.exports = router;

@@ -3,7 +3,8 @@ const {
   getStats,
   getRequests,
   getAIPriority,
-  updateStatus
+  updateStatus,
+  getConstituencyAIInsights
 } = require('../controllers/dashboardController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -16,6 +17,7 @@ router.use(authorize('mp', 'admin'));
 router.get('/stats', getStats);
 router.get('/requests', getRequests);
 router.get('/ai-priority', getAIPriority);
+router.get('/ai-insights', getConstituencyAIInsights);
 router.patch('/requests/:id/status', updateStatus);
 
 module.exports = router;

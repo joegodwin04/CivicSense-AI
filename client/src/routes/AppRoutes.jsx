@@ -4,6 +4,7 @@ import LandingPage from '../pages/LandingPage';
 import CitizenPortal from '../pages/CitizenPortal';
 import MPDashboard from '../pages/MPDashboard';
 import AdminDashboard from '../pages/AdminDashboard';
+import IssueDetails from '../pages/IssueDetails';
 import Login from '../pages/Login';
 import Register from '../pages/Register';
 import PublicLayout from '../layouts/PublicLayout';
@@ -57,6 +58,14 @@ export default function AppRoutes() {
         element={
           <PublicLayout>
             <Register />
+          </PublicLayout>
+        }
+      />
+      <Route
+        path="/requests/:id"
+        element={
+          <PublicLayout>
+            <IssueDetails />
           </PublicLayout>
         }
       />

@@ -2,15 +2,29 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, Users, Menu, X, LogIn, LogOut, Shield } from 'lucide-react';
+import { LayoutDashboard, Users, Menu, X, LogIn, LogOut, Shield, Bell } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import api from '../../utils/api';
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout, isAuthenticated } = useApp();
+
+  const fetchNotifications = async () => {
+    if (!isAuthenticated) return;
+    try {
+      const res = await api.get('/citizen/notifications');
+      setNotifications(res.data.data || []);
+    } catch (err) {
+      console.error('Failed to fetch navbar notifications:', err);
+    }
+  };
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 20);
@@ -22,10 +36,20 @@ export default function Navbar() {
     setMobileOpen(false);
   }, [location.pathname]);
 
+  useEffect(() => {
+    fetchNotifications();
+    if (isAuthenticated) {
+      const interval = setInterval(fetchNotifications, 12000);
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated]);
+
   const handleLogout = () => {
     logout();
     navigate('/');
   };
+
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
     <>
@@ -38,7 +62,7 @@ export default function Navbar() {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           
-          {/* Logo - Serif Display pairing */}
+          {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 group no-underline">
             <div className="w-8 h-8 rounded-full bg-[#E0A030] flex items-center justify-center shrink-0">
               <Shield size={16} className="text-[#0F2A44]" fill="currentColor" />
@@ -49,7 +73,7 @@ export default function Navbar() {
             </div>
           </Link>
 
-          {/* Desktop nav - No generic blur gradients */}
+          {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-4">
             <Link
               to="/citizen"
@@ -80,14 +104,95 @@ export default function Navbar() {
                   </Link>
                 )}
                 
+                {/* Bell notification button */}
+                <div className="relative ml-2">
+                  <button
+                    onClick={() => setShowNotifDropdown(!showNotifDropdown)}
+                    className="p-2 rounded text-white/60 hover:text-[#E0A030] hover:bg-white/5 transition-all relative cursor-pointer"
+                    title="Notifications"
+                  >
+                    <Bell size={16} />
+                    {unreadCount > 0 && (
+                      <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-[#0F2A44]" />
+                    )}
+                  </button>
+                  
+                  {/* Dropdown Overlay */}
+                  <AnimatePresence>
+                    {showNotifDropdown && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 8 }}
+                        className="absolute right-0 mt-2 w-80 bg-[#122438] border border-white/15 rounded-lg shadow-xl overflow-hidden z-50 text-left"
+                      >
+                        <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-white uppercase tracking-wider">Latest Alerts</span>
+                          {unreadCount > 0 && (
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await api.patch('/citizen/notifications/read-all');
+                                  setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+                                } catch (err) {
+                                  console.error('Navbar read all error:', err);
+                                }
+                              }}
+                              className="text-[9px] text-[#E0A030] hover:underline font-bold cursor-pointer"
+                            >
+                              Mark all read
+                            </button>
+                          )}
+                        </div>
+                        <div className="max-h-64 overflow-y-auto divide-y divide-white/5">
+                          {notifications.length === 0 ? (
+                            <div className="px-4 py-6 text-center text-white/40 text-xs">
+                              No recent alerts.
+                            </div>
+                          ) : (
+                            notifications.slice(0, 5).map(n => (
+                              <div 
+                                key={n._id}
+                                className={`p-3 text-xs leading-normal relative hover:bg-white/[0.02] cursor-pointer transition-colors ${
+                                  n.read ? 'text-white/50' : 'text-white font-semibold bg-white/[0.01]'
+                                }`}
+                                onClick={async () => {
+                                  setShowNotifDropdown(false);
+                                  try {
+                                    await api.patch(`/citizen/notifications/${n._id}/read`);
+                                    setNotifications(prev => prev.map(item => item._id === n._id ? { ...item, read: true } : item));
+                                  } catch (err) {
+                                    console.error('Navbar read check error:', err);
+                                  }
+                                  if (n.request) {
+                                    navigate(`/requests/${n.request._id || n.request}`);
+                                  }
+                                }}
+                              >
+                                {!n.read && (
+                                  <span className="absolute top-4 left-2 w-1.5 h-1.5 rounded-full bg-[#E0A030]" />
+                                )}
+                                <p className={!n.read ? 'pl-2.5' : ''}>{n.message}</p>
+                                <span className={`block mt-1.5 text-[9px] text-white/30 font-bold ${!n.read ? 'pl-2.5' : ''}`}>
+                                  {new Date(n.createdAt).toLocaleDateString()}
+                                </span>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
                 {/* User badge / logout details */}
-                <div className="flex items-center gap-2.5 pl-3 border-l border-white/10">
+                <div className="flex items-center gap-2.5 pl-3 border-l border-white/10 ml-1">
                   <div className="w-8 h-8 rounded bg-white/5 border border-white/15 flex items-center justify-center text-xs font-bold text-white uppercase select-none">
                     {user?.name ? user.name.slice(0, 2) : 'US'}
                   </div>
                   <button
                     onClick={handleLogout}
-                    className="p-2 rounded text-white/40 hover:text-red-400 transition-colors"
+                    className="p-2 rounded text-white/40 hover:text-red-400 transition-colors cursor-pointer"
                     title="Log Out"
                   >
                     <LogOut size={16} />
@@ -108,7 +213,7 @@ export default function Navbar() {
           {/* Mobile menu toggle */}
           <button
             onClick={() => setMobileOpen((v) => !v)}
-            className="md:hidden w-9 h-9 flex items-center justify-center rounded bg-[#122438] border border-white/15 text-white/70 hover:text-white transition-all"
+            className="md:hidden w-9 h-9 flex items-center justify-center rounded bg-[#122438] border border-white/15 text-white/70 hover:text-white transition-all cursor-pointer"
             aria-label="Toggle menu"
           >
             {mobileOpen ? <X size={18} /> : <Menu size={18} />}
@@ -150,7 +255,7 @@ export default function Navbar() {
                     )}
                     <button
                       onClick={handleLogout}
-                      className="w-full flex items-center gap-3 px-4 py-3 rounded text-sm font-medium text-red-400 hover:bg-white/5 transition-colors text-left"
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded text-sm font-medium text-red-400 hover:bg-white/5 transition-colors text-left cursor-pointer"
                     >
                       <LogOut size={16} />
                       Log Out ({user?.name})

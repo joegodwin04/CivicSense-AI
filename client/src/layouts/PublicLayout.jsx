@@ -2,6 +2,7 @@
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
 import NotificationToast from '../components/common/NotificationToast';
+import AIChatbot from '../components/ui/AIChatbot';
 
 export default function PublicLayout({ children }) {
   return (
@@ -10,6 +11,7 @@ export default function PublicLayout({ children }) {
       <main className="flex-1">{children}</main>
       <Footer />
       <NotificationToast />
+      <AIChatbot />
     </div>
   );
 }

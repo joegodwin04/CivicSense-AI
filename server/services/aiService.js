@@ -166,8 +166,123 @@ const transcribeAudio = async (audioBase64, mimeType) => {
   }
 };
 
+/**
+ * Generates detailed insights for an issue details view using Gemini.
+ */
+const generateDetailedInsights = async (title, description, category) => {
+  try {
+    const prompt = `
+      You are an expert advisor for a civic grievance and public works department.
+      Analyze the following reported issue in standard English:
+      
+      Title: "${title}"
+      Description: "${description}"
+      Category: "${category}"
+      
+      Perform the following tasks:
+      1. Provide a detailed "impactEstimate" of this issue if left unresolved (e.g. traffic congestion, health risk, child safety). Max 2 sentences.
+      2. Suggest 2-3 specific Indian government / civic schemes ("suggestedSchemes") that fund or address this type of problem (e.g. Jal Jeevan Mission, PMGSY, Swachh Bharat Mission, AMRUT, etc.).
+      
+      Return ONLY a valid JSON object with the following keys:
+      {
+        "impactEstimate": "String",
+        "suggestedSchemes": ["Scheme A: Description", "Scheme B: Description"]
+      }
+    `;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json',
+        temperature: 0.2
+      }
+    });
+
+    return JSON.parse(response.text);
+  } catch (error) {
+    logger.error(`Failed to generate detailed insights: ${error.message}`);
+    return {
+      impactEstimate: 'Potential public safety risk and degradation of neighborhood usability.',
+      suggestedSchemes: [`Civic Infrastructure Maintenance Fund (CIMF): Local municipal budget allocations`, `Municipal Ward Development Scheme: Local counselor development grants`]
+    };
+  }
+};
+
+/**
+ * Generates constituency-level summaries and recommended action plans.
+ */
+const generateConstituencyInsights = async (constituency, metrics, topRequests) => {
+  try {
+    const prompt = `
+      You are an expert civic analyst advising a Member of Parliament (MP) in India.
+      Constituency: "${constituency}"
+      
+      Active Metrics:
+      ${JSON.stringify(metrics)}
+      
+      Top Critical Grievances:
+      ${JSON.stringify(topRequests.map(r => ({
+        title: r.title,
+        description: r.description,
+        category: r.category,
+        priorityScore: r.priorityScore,
+        duplicates: r.duplicateCount,
+        address: r.location?.address
+      })))}
+      
+      Perform the following tasks:
+      1. Write a brief 2-3 sentence executive "constituencySummary" addressing the current problem areas.
+      2. Provide 3 specific, highly-actionable "recommendedActions" for the representative's office.
+      3. Suggest 3 relevant Indian government/public funding schemes ("suggestedSchemes") with a brief 1-sentence note for each.
+      4. Write a 1-sentence "heatAnalysis" identifying the category/geographic hotspots.
+      
+      Return ONLY a valid JSON object with the following keys:
+      {
+        "constituencySummary": "String",
+        "recommendedActions": ["Action 1", "Action 2", "Action 3"],
+        "suggestedSchemes": [
+          { "name": "Scheme A Name", "description": "How it helps" },
+          { "name": "Scheme B Name", "description": "How it helps" },
+          { "name": "Scheme C Name", "description": "How it helps" }
+        ],
+        "heatAnalysis": "String"
+      }
+    `;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json',
+        temperature: 0.2
+      }
+    });
+
+    return JSON.parse(response.text);
+  } catch (error) {
+    logger.error(`Failed to generate constituency insights: ${error.message}`);
+    return {
+      constituencySummary: `Development requests show significant focus on local infrastructure and municipal utilities inside ${constituency}.`,
+      recommendedActions: [
+        'Deploy engineering teams to investigate top-priority roads complaints.',
+        'Review sanitation and waste collection frequency in high density spots.',
+        'Initiate public health/drainage audits ahead of monsoon/heavy rains.'
+      ],
+      suggestedSchemes: [
+        { name: 'Pradhan Mantri Gram Sadak Yojana (PMGSY)', description: 'Funding road development projects.' },
+        { name: 'Swachh Bharat Mission (SBM)', description: 'Allocating grants for public sanitation facilities.' },
+        { name: 'Jal Jeevan Mission', description: 'Providing functional household tap connections.' }
+      ],
+      heatAnalysis: 'A high density of infrastructure grievances is clustered near primary municipal roadways.'
+    };
+  }
+};
+
 module.exports = {
   analyzeCitizenRequest,
   analyzeCitizenImage,
-  transcribeAudio
+  transcribeAudio,
+  generateDetailedInsights,
+  generateConstituencyInsights
 };

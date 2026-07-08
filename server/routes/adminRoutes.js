@@ -4,7 +4,8 @@ const {
   getAllUsers,
   verifyMP,
   rejectMP,
-  deleteUser
+  deleteUser,
+  deleteRequest
 } = require('../controllers/adminController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -19,5 +20,6 @@ router.get('/users', getAllUsers);
 router.patch('/verify-mp/:id', verifyMP);
 router.delete('/reject-mp/:id', rejectMP);
 router.delete('/users/:id', deleteUser);
+router.delete('/requests/:id', deleteRequest);
 
 module.exports = router;

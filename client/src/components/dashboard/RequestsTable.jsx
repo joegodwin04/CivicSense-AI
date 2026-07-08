@@ -1,8 +1,10 @@
 // src/components/dashboard/RequestsTable.jsx
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowUpDown, Users, Sparkles, MapPin, Mic, FileText } from 'lucide-react';
-import { getImageUrl } from '../../utils/api';
+import { ArrowUpDown, Users, Sparkles, MapPin, Mic, FileText, ExternalLink } from 'lucide-react';
+import api, { getImageUrl } from '../../utils/api';
+import { useApp } from '../../context/AppContext';
 
 import { CATEGORY_COLORS } from '../../utils/colors';
 
@@ -52,6 +54,7 @@ function PriorityScore({ score }) {
 
 export default function RequestsTable({ requests = [], loading = false }) {
   const [expandedRow, setExpandedRow] = useState(null);
+  const { user, addNotification } = useApp();
 
   if (loading) {
     return (
@@ -77,6 +80,8 @@ export default function RequestsTable({ requests = [], loading = false }) {
     );
   }
 
+  const isMpOrAdmin = user?.role === 'mp' || user?.role === 'admin';
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
@@ -99,9 +104,8 @@ export default function RequestsTable({ requests = [], loading = false }) {
             const isExpanded = expandedRow === row._id;
 
             return (
-              <>
+              <tr key={row._id} style={{ display: 'table-row-group' }}>
                 <tr
-                  key={row._id}
                   onClick={() => setExpandedRow(isExpanded ? null : row._id)}
                   className="border-b border-white/10 hover:bg-white/[0.02] transition-colors group cursor-pointer"
                 >
@@ -112,25 +116,25 @@ export default function RequestsTable({ requests = [], loading = false }) {
                           <img src={getImageUrl(row.imageUrl)} alt="" className="w-full h-full object-cover" />
                         </div>
                       )}
-                      <div className="min-w-0">
+                      <div className="min-w-0 text-left">
                         <p className="font-bold text-white text-[13px] truncate">{row.title}</p>
                         <p className="text-[#94A3B8] text-xs truncate mt-0.5">{row.description?.slice(0, 50)}...</p>
                       </div>
                     </div>
                   </td>
-                  <td className="px-5 py-4">
+                  <td className="px-5 py-4 text-left">
                     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border text-[9px] font-bold uppercase tracking-wider ${catCfg.bg} ${catCfg.color}`}>
                       <div className="w-1 h-1 rounded-full" style={{ background: catCfg.dot }} />
                       {catCfg.label}
                     </span>
                   </td>
-                  <td className="px-5 py-4 text-[#94A3B8] text-xs max-w-[140px] truncate">
+                  <td className="px-5 py-4 text-[#94A3B8] text-xs max-w-[140px] truncate text-left">
                     {row.location?.address || '—'}
                   </td>
-                  <td className="px-5 py-4">
+                  <td className="px-5 py-4 text-left">
                     <PriorityScore score={row.priorityScore} />
                   </td>
-                  <td className="px-5 py-4">
+                  <td className="px-5 py-4 text-left">
                     {(row.duplicateCount ?? 0) > 0 ? (
                       <div className="flex items-center gap-1 text-white text-xs">
                         <Users size={12} className="text-[#E0A030]" />
@@ -140,11 +144,43 @@ export default function RequestsTable({ requests = [], loading = false }) {
                       <span className="text-white/20 text-xs">—</span>
                     )}
                   </td>
-                  <td className="px-5 py-4">
-                    <span className={`badge ${statusCfg.cls}`}>
-                      <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                      {statusCfg.label}
-                    </span>
+                  <td className="px-5 py-4 text-left" onClick={(e) => isMpOrAdmin && e.stopPropagation()}>
+                    {isMpOrAdmin ? (
+                      <select
+                        value={row.status || 'pending'}
+                        onChange={async (e) => {
+                          const nextStatus = e.target.value;
+                          try {
+                            await api.patch(`/dashboard/requests/${row._id}/status`, { status: nextStatus });
+                            addNotification({
+                              type: 'success',
+                              title: 'Status Updated',
+                              message: `Grievance transitioned to ${nextStatus.toUpperCase()}`
+                            });
+                            row.status = nextStatus;
+                            setTimeout(() => window.location.reload(), 800);
+                          } catch (err) {
+                            addNotification({
+                              type: 'error',
+                              title: 'Transition Failed',
+                              message: err.response?.data?.error || 'Failed to update status.'
+                            });
+                          }
+                        }}
+                        className="bg-[#0B0F19] border border-white/10 rounded px-2 py-1 text-white text-xs font-bold focus:outline-none focus:border-[#E0A030] cursor-pointer capitalize"
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="processing">Processing</option>
+                        <option value="under-review">Under Review</option>
+                        <option value="resolved">Resolved</option>
+                        <option value="rejected">Rejected</option>
+                      </select>
+                    ) : (
+                      <span className={`badge ${statusCfg.cls}`}>
+                        <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                        {statusCfg.label}
+                      </span>
+                    )}
                   </td>
                 </tr>
 
@@ -152,7 +188,7 @@ export default function RequestsTable({ requests = [], loading = false }) {
                 {isExpanded && (
                   <tr className="bg-[#0F2A44]/40 border-b border-white/10">
                     <td colSpan={6} className="px-5 py-4">
-                      <div className="flex flex-wrap gap-4 text-xs">
+                      <div className="flex flex-wrap gap-4 text-xs text-left">
                         {row.aiRecommendation && (
                           <div className="flex-1 min-w-[200px] p-4 rounded bg-[#0F2A44] border border-[#E0A030]/20 space-y-2">
                             <div className="flex items-center gap-1.5">
@@ -183,11 +219,32 @@ export default function RequestsTable({ requests = [], loading = false }) {
                             <p className="text-[#E2E8F0] italic">"{row.audioTranscript}"</p>
                           </div>
                         )}
+                        
+                        {/* Action Desk Link Card */}
+                        <div className="flex-1 min-w-[180px] p-4 rounded bg-[#0F2A44] border border-[#E0A030]/10 flex flex-col justify-between items-start gap-4">
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <FileText size={12} className="text-[#E0A030]" />
+                              <span className="text-white font-bold text-[10px] uppercase tracking-wider">Action Desk</span>
+                            </div>
+                            <p className="text-[#94A3B8] text-[11px] mt-1.5 leading-relaxed">
+                              Access full details, government schemes, location maps, and timelines.
+                            </p>
+                          </div>
+                          
+                          <Link
+                            to={`/requests/${row._id}`}
+                            className="px-3.5 py-1.5 rounded bg-[#E0A030] hover:bg-[#F0B040] text-[#0F2A44] font-bold text-[10px] uppercase tracking-wider transition-colors no-underline flex items-center gap-1"
+                          >
+                            <span>Open Details</span>
+                            <ExternalLink size={10} />
+                          </Link>
+                        </div>
                       </div>
                     </td>
                   </tr>
                 )}
-              </>
+              </tr>
             );
           })}
         </tbody>

@@ -125,10 +125,29 @@ const deleteUser = asyncHandler(async (req, res) => {
   });
 });
 
+// @desc    Delete request (Admin Moderation)
+// @route   DELETE /api/admin/requests/:id
+// @access  Private (Admin only)
+const deleteRequest = asyncHandler(async (req, res) => {
+  const request = await Request.findById(req.params.id);
+
+  if (!request) {
+    throw new AppError('Request not found', 404);
+  }
+
+  await Request.findByIdAndDelete(req.params.id);
+
+  res.status(200).json({
+    success: true,
+    message: `Request titled "${request.title}" has been moderated and deleted successfully`
+  });
+});
+
 module.exports = {
   getAdminStats,
   getAllUsers,
   verifyMP,
   rejectMP,
-  deleteUser
+  deleteUser,
+  deleteRequest
 };

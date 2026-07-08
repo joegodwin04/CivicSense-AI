@@ -2,11 +2,71 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Send, UploadCloud, Mic, MicOff, MapPin, RefreshCw, CheckCircle2, AlertTriangle, Users, Sparkles, Globe } from 'lucide-react';
+import { APIProvider, Map, Marker } from '@vis.gl/react-google-maps';
 import { CATEGORIES } from '../../constants';
 import { useGeolocation } from '../../hooks/useGeolocation';
 import { citizenService } from '../../services/citizenService';
 import { useApp } from '../../context/AppContext';
 import Button from '../ui/Button';
+
+const extractAddressComponents = (components) => {
+  const info = {
+    landmark: '',
+    locality: '',
+    ward: '',
+    city: '',
+    district: '',
+    state: '',
+    postalCode: ''
+  };
+
+  if (!components || !Array.isArray(components)) return info;
+
+  components.forEach(c => {
+    const types = c.types;
+    if (types.includes('premise') || types.includes('point_of_interest') || types.includes('establishment')) {
+      info.landmark = c.long_name;
+    }
+    if (types.includes('sublocality_level_1') || types.includes('sublocality')) {
+      info.locality = c.long_name;
+    }
+    if (types.includes('sublocality_level_2') || types.includes('neighborhood') || types.includes('colony')) {
+      info.ward = c.long_name;
+    }
+    if (types.includes('locality')) {
+      info.city = c.long_name;
+    }
+    if (types.includes('administrative_area_level_2')) {
+      info.district = c.long_name;
+    }
+    if (types.includes('administrative_area_level_1')) {
+      info.state = c.long_name;
+    }
+    if (types.includes('postal_code')) {
+      info.postalCode = c.long_name;
+    }
+  });
+
+  return info;
+};
+
+const getHumanReadableAddress = (info, fallbackAddress) => {
+  const parts = [];
+  if (info.landmark) {
+    parts.push(`Near ${info.landmark}`);
+  }
+  if (info.ward) {
+    parts.push(info.ward);
+  }
+  if (info.locality) {
+    parts.push(info.locality);
+  }
+  
+  if (parts.length > 0) {
+    return parts.join(', ');
+  }
+  return fallbackAddress;
+};
 
 const INITIAL_FORM = {
   description: '',
@@ -41,6 +101,83 @@ export default function RequestForm({ onSuccess }) {
     latitude: '',
     longitude: ''
   });
+
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+  const defaultPosition = { lat: 12.9716, lng: 77.5946 };
+  const [markerPosition, setMarkerPosition] = useState(null);
+
+  const [parsedLocation, setParsedLocation] = useState({
+    landmark: '',
+    locality: '',
+    ward: '',
+    city: '',
+    district: '',
+    state: '',
+    postalCode: ''
+  });
+
+  const [geocodingLoading, setGeocodingLoading] = useState(false);
+  const [geocodingError, setGeocodingError] = useState(null);
+
+  useEffect(() => {
+    if (isManual && location) {
+      setMarkerPosition({ lat: location.latitude, lng: location.longitude });
+    }
+  }, [isManual, location]);
+
+  useEffect(() => {
+    if (markerPosition) {
+      setManualLocation(prev => ({
+        ...prev,
+        latitude: markerPosition.lat.toString(),
+        longitude: markerPosition.lng.toString()
+      }));
+    }
+  }, [markerPosition]);
+
+  const [addressSearch, setAddressSearch] = useState('');
+  const [searchingAddress, setSearchingAddress] = useState(false);
+
+  const handleSearchAddress = () => {
+    if (!addressSearch.trim() || !window.google) return;
+    setSearchingAddress(true);
+    setGeocodingLoading(true);
+    setGeocodingError(null);
+    const geocoder = new window.google.maps.Geocoder();
+    geocoder.geocode({ address: addressSearch }, (results, status) => {
+      setSearchingAddress(false);
+      setGeocodingLoading(false);
+      if (status === 'OK' && results[0]) {
+        const { lat, lng } = results[0].geometry.location;
+        const coords = { lat: lat(), lng: lng() };
+        setMarkerPosition(coords);
+        
+        const parsed = extractAddressComponents(results[0].address_components);
+        setParsedLocation(parsed);
+        const readable = getHumanReadableAddress(parsed, results[0].formatted_address);
+
+        setManualLocation(prev => ({
+          ...prev,
+          address: readable,
+          latitude: coords.lat.toString(),
+          longitude: coords.lng.toString()
+        }));
+        
+        addNotification({
+          type: 'success',
+          title: 'Address Located',
+          message: `Coordinates locked to: ${readable}`
+        });
+      } else {
+        setGeocodingError('Search failed to resolve address.');
+        addNotification({
+          type: 'error',
+          title: 'Search Failed',
+          message: 'Could not resolve address. Try another search term.'
+        });
+      }
+    });
+  };
 
   useEffect(() => {
     if (geoError) {
@@ -125,22 +262,47 @@ export default function RequestForm({ onSuccess }) {
       if (audioBlob) data.append('audio', audioBlob, 'recording.webm');
       
       if (isManual) {
-        if (!manualLocation.address.trim()) {
+        if (!markerPosition) {
           addNotification({
             type: 'warning',
-            title: 'Location required',
-            message: 'Please fill in the manual address/location.'
+            title: 'Location Pin Required',
+            message: 'Please click on the map or search to choose a location.'
           });
           setSubmitting(false);
           return;
         }
-        data.append('latitude', manualLocation.latitude ? parseFloat(manualLocation.latitude) : 12.9716);
-        data.append('longitude', manualLocation.longitude ? parseFloat(manualLocation.longitude) : 77.5946);
+        if (!manualLocation.address.trim()) {
+          addNotification({
+            type: 'warning',
+            title: 'Address Required',
+            message: 'Please provide an address/landmark name.'
+          });
+          setSubmitting(false);
+          return;
+        }
+        data.append('latitude', markerPosition.lat);
+        data.append('longitude', markerPosition.lng);
         data.append('address', manualLocation.address);
-      } else if (location) {
+        data.append('landmark', parsedLocation.landmark || '');
+        data.append('locality', parsedLocation.locality || '');
+        data.append('ward', parsedLocation.ward || '');
+        data.append('city', parsedLocation.city || '');
+        data.append('district', parsedLocation.district || '');
+        data.append('state', parsedLocation.state || '');
+        data.append('postalCode', parsedLocation.postalCode || '');
+      } else {
+        if (!location) {
+          addNotification({
+            type: 'warning',
+            title: 'Location Required',
+            message: 'Please verify your current location first, or switch to manual map placement.'
+          });
+          setSubmitting(false);
+          return;
+        }
         data.append('latitude', location.latitude);
         data.append('longitude', location.longitude);
-        data.append('address', location.address);
+        data.append('address', location.address || '');
       }
 
       const res = await citizenService.submitRequest(data);
@@ -450,9 +612,17 @@ export default function RequestForm({ onSuccess }) {
               className="border-t border-white/5 pt-3 mt-1 space-y-3 text-left"
             >
               <div className="space-y-1">
-                <label className="block text-[10px] font-bold text-white/50 uppercase tracking-wider">
-                  Address / Landmark / Ward Name *
-                </label>
+                <div className="flex justify-between items-center">
+                  <label className="block text-[10px] font-bold text-white/50 uppercase tracking-wider">
+                    Address / Landmark / Ward Name *
+                  </label>
+                  {geocodingLoading && (
+                    <span className="text-[10px] text-[#E0A030] font-bold animate-pulse">Retrieving Address...</span>
+                  )}
+                  {geocodingError && (
+                    <span className="text-[10px] text-red-400 font-bold">{geocodingError}</span>
+                  )}
+                </div>
                 <input
                   type="text"
                   required={isManual}
@@ -462,34 +632,182 @@ export default function RequestForm({ onSuccess }) {
                   className="w-full bg-[#0F2A44] border border-white/10 rounded px-3 py-2 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#E0A030] transition-colors"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
+              {apiKey && apiKey !== 'YOUR_API_KEY_HERE' ? (
+                <div className="space-y-2">
                   <label className="block text-[10px] font-bold text-white/50 uppercase tracking-wider">
-                    Latitude (Optional)
+                    Pin Location on Map *
                   </label>
-                  <input
-                    type="number"
-                    step="any"
-                    value={manualLocation.latitude}
-                    onChange={(e) => setManualLocation(prev => ({ ...prev, latitude: e.target.value }))}
-                    placeholder="e.g. 12.9716"
-                    className="w-full bg-[#0F2A44] border border-white/10 rounded px-3 py-2 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#E0A030] transition-colors"
-                  />
+                  
+                  {/* Geocoding Search Input Bar */}
+                  <div className="flex gap-1.5">
+                    <input
+                      type="text"
+                      value={addressSearch}
+                      onChange={e => setAddressSearch(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleSearchAddress();
+                        }
+                      }}
+                      placeholder="Search location/area name..."
+                      className="flex-1 bg-[#0B0F19] border border-white/10 rounded px-2.5 py-1.5 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#E0A030] transition-colors"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleSearchAddress}
+                      disabled={searchingAddress || !addressSearch.trim()}
+                      className="px-3.5 py-1.5 bg-[#E0A030] hover:bg-[#F0B040] disabled:bg-[#E0A030]/20 text-[#0F2A44] font-bold text-xs rounded transition-colors cursor-pointer"
+                    >
+                      {searchingAddress ? '...' : 'Search'}
+                    </button>
+                  </div>
+
+                  <div style={{ height: '220px', width: '100%', borderRadius: '8px', overflow: 'hidden' }} className="border border-white/10 relative z-0 mt-1">
+                    <APIProvider apiKey={apiKey}>
+                      <Map
+                        center={markerPosition || defaultPosition}
+                        defaultZoom={13}
+                        onClick={(e) => {
+                          if (e.detail?.latLng) {
+                            const { lat, lng } = e.detail.latLng;
+                            const coords = { lat, lng };
+                            setMarkerPosition(coords);
+                            setGeocodingLoading(true);
+                            setGeocodingError(null);
+                            
+                            if (window.google) {
+                              const geocoder = new window.google.maps.Geocoder();
+                              geocoder.geocode({ location: coords }, (results, status) => {
+                                setGeocodingLoading(false);
+                                if (status === 'OK' && results[0]) {
+                                  const parsed = extractAddressComponents(results[0].address_components);
+                                  setParsedLocation(parsed);
+                                  const readable = getHumanReadableAddress(parsed, results[0].formatted_address);
+                                  
+                                  setManualLocation(prev => ({
+                                    ...prev,
+                                    address: readable,
+                                    latitude: lat.toString(),
+                                    longitude: lng.toString()
+                                  }));
+                                } else {
+                                  setGeocodingError('Geocoding failed for clicked location.');
+                                }
+                              });
+                            } else {
+                              setGeocodingLoading(false);
+                            }
+                          }
+                        }}
+                        disableDefaultUI={true}
+                        zoomControl={true}
+                        mapId="PICKER_MAP_ID"
+                      >
+                        {markerPosition && (
+                          <Marker position={markerPosition} />
+                        )}
+                      </Map>
+                    </APIProvider>
+                  </div>
+                  
+                  {/* Use My Location Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (navigator.geolocation) {
+                        setGeocodingLoading(true);
+                        setGeocodingError(null);
+                        navigator.geolocation.getCurrentPosition(
+                          (position) => {
+                            const coords = {
+                              lat: position.coords.latitude,
+                              lng: position.coords.longitude
+                            };
+                            setMarkerPosition(coords);
+                            
+                            if (window.google) {
+                              const geocoder = new window.google.maps.Geocoder();
+                              geocoder.geocode({ location: coords }, (results, status) => {
+                                setGeocodingLoading(false);
+                                if (status === 'OK' && results[0]) {
+                                  const parsed = extractAddressComponents(results[0].address_components);
+                                  setParsedLocation(parsed);
+                                  const readable = getHumanReadableAddress(parsed, results[0].formatted_address);
+                                  setManualLocation(prev => ({
+                                    ...prev,
+                                    address: readable,
+                                    latitude: coords.lat.toString(),
+                                    longitude: coords.lng.toString()
+                                  }));
+                                  addNotification({
+                                    type: 'success',
+                                    title: 'Location Captured',
+                                    message: 'Synchronized browser coordinates successfully.'
+                                  });
+                                } else {
+                                  setGeocodingError('Geocoding failed for current coordinates.');
+                                }
+                              });
+                            } else {
+                              setGeocodingLoading(false);
+                            }
+                          },
+                          (err) => {
+                            setGeocodingLoading(false);
+                            addNotification({
+                              type: 'error',
+                              title: 'Location Blocked',
+                              message: 'Please allow browser location permissions.'
+                            });
+                          }
+                        );
+                      }
+                    }}
+                    className="w-full mt-1.5 px-3 py-2 bg-[#0F2A44] border border-white/10 hover:bg-white/5 transition-colors rounded text-white text-xs flex items-center justify-center gap-2 font-bold uppercase tracking-wider cursor-pointer"
+                  >
+                    <Navigation size={13} className="text-[#E0A030]" />
+                    Use My Location
+                  </button>
+
+                  <div className="text-[10px] text-white/50 bg-[#0F2A44]/50 p-2 rounded border border-white/5 flex items-center justify-between">
+                    {markerPosition ? (
+                      <span>Coordinates: <strong>{markerPosition.lat.toFixed(5)}, {markerPosition.lng.toFixed(5)}</strong></span>
+                    ) : (
+                      <span className="text-amber-400 font-semibold">Click on the map to set coordinates.</span>
+                    )}
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-white/50 uppercase tracking-wider">
-                    Longitude (Optional)
-                  </label>
-                  <input
-                    type="number"
-                    step="any"
-                    value={manualLocation.longitude}
-                    onChange={(e) => setManualLocation(prev => ({ ...prev, longitude: e.target.value }))}
-                    placeholder="e.g. 77.5946"
-                    className="w-full bg-[#0F2A44] border border-white/10 rounded px-3 py-2 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#E0A030] transition-colors"
-                  />
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-bold text-white/50 uppercase tracking-wider">
+                      Latitude (Optional)
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={manualLocation.latitude}
+                      onChange={(e) => setManualLocation(prev => ({ ...prev, latitude: e.target.value }))}
+                      placeholder="e.g. 12.9716"
+                      className="w-full bg-[#0F2A44] border border-white/10 rounded px-3 py-2 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#E0A030] transition-colors"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-bold text-white/50 uppercase tracking-wider">
+                      Longitude (Optional)
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={manualLocation.longitude}
+                      onChange={(e) => setManualLocation(prev => ({ ...prev, longitude: e.target.value }))}
+                      placeholder="e.g. 77.5946"
+                      className="w-full bg-[#0F2A44] border border-white/10 rounded px-3 py-2 text-white placeholder-white/20 text-xs focus:outline-none focus:border-[#E0A030] transition-colors"
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
             </motion.div>
           )}
 

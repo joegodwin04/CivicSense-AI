@@ -1,6 +1,7 @@
 // src/layouts/DashboardLayout.jsx
 import Navbar from '../components/common/Navbar';
 import NotificationToast from '../components/common/NotificationToast';
+import AIChatbot from '../components/ui/AIChatbot';
 
 export default function DashboardLayout({ children }) {
   return (
@@ -8,6 +9,7 @@ export default function DashboardLayout({ children }) {
       <Navbar />
       <main className="pt-16">{children}</main>
       <NotificationToast />
+      <AIChatbot />
     </div>
   );
 }

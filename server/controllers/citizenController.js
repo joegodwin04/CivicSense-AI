@@ -4,7 +4,13 @@ const path = require('path');
 const asyncHandler = require('express-async-handler');
 const { AppError } = require('../middleware/errorMiddleware');
 const Request = require('../models/Request');
-const { analyzeCitizenRequest, analyzeCitizenImage, transcribeAudio } = require('../services/aiService');
+const Notification = require('../models/Notification');
+const { 
+  analyzeCitizenRequest, 
+  analyzeCitizenImage, 
+  transcribeAudio,
+  generateDetailedInsights 
+} = require('../services/aiService');
 const infrastructureList = require('../src/data/infrastructure.json');
 
 // Haversine distance calculator
@@ -218,7 +224,14 @@ const submitRequest = asyncHandler(async (req, res, next) => {
     location: {
       type: 'Point',
       coordinates: [lng, lat],
-      address: address
+      address: address,
+      landmark: req.body.landmark || '',
+      locality: req.body.locality || '',
+      ward: req.body.ward || '',
+      city: req.body.city || '',
+      district: req.body.district || '',
+      state: req.body.state || '',
+      postalCode: req.body.postalCode || ''
     },
     category: resolvedCategory,
     sentiment: aiResult.sentiment,
@@ -421,10 +434,240 @@ const getMyStats = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Get details of a single request
+// @route   GET /api/citizen/requests/:id
+// @access  Private
+const getRequestDetails = asyncHandler(async (req, res, next) => {
+  const request = await Request.findById(req.params.id);
+  if (!request) {
+    throw new AppError('Request not found', 404);
+  }
+
+  // Generate detailed AI insights if they do not exist
+  if (!request.aiImpactEstimate || !request.suggestedSchemes || request.suggestedSchemes.length === 0) {
+    try {
+      const insights = await generateDetailedInsights(
+        request.title,
+        request.description,
+        request.category
+      );
+      request.aiImpactEstimate = insights.impactEstimate || 'Potential safety and public utility concern.';
+      request.suggestedSchemes = insights.suggestedSchemes || [];
+      await request.save();
+    } catch (err) {
+      console.error('Failed to generate dynamic AI details:', err.message);
+    }
+  }
+
+  // Find similar requests nearby (within 1km, same category)
+  let similarIssues = [];
+  if (request.location?.coordinates && request.location.coordinates.length === 2) {
+    const [lng, lat] = request.location.coordinates;
+    similarIssues = await Request.find({
+      _id: { $ne: request._id },
+      category: request.category,
+      isDuplicate: { $ne: true },
+      location: {
+        $near: {
+          $geometry: {
+            type: 'Point',
+            coordinates: [lng, lat]
+          },
+          $maxDistance: 1000 // 1km
+        }
+      }
+    }).limit(5);
+  }
+
+  res.status(200).json({
+    success: true,
+    data: request,
+    similarIssues
+  });
+});
+
+// @desc    Edit a citizen request (only if pending)
+// @route   PUT /api/citizen/requests/:id
+// @access  Private
+const updateRequest = asyncHandler(async (req, res, next) => {
+  const request = await Request.findById(req.params.id);
+  if (!request) {
+    throw new AppError('Request not found', 404);
+  }
+
+  // Validate owner
+  if (request.user && request.user.toString() !== req.user._id.toString()) {
+    throw new AppError('Not authorized to edit this request', 403);
+  }
+
+  if (request.status !== 'pending') {
+    throw new AppError('Cannot edit a request that is already under review or processed', 400);
+  }
+
+  const { title, description, category } = req.body;
+  if (!description || !description.trim()) {
+    throw new AppError('Description is required', 400);
+  }
+
+  request.title = title || request.title;
+  request.description = description;
+  request.category = category || request.category;
+
+  // Re-run AI analysis
+  try {
+    const aiResult = await analyzeCitizenRequest(
+      description,
+      request.nearbyInfrastructure || [],
+      request.duplicateCount || 0
+    );
+    request.sentiment = aiResult.sentiment || request.sentiment;
+    request.urgencyScore = aiResult.urgencyScore || request.urgencyScore;
+    request.priorityScore = aiResult.priorityScore || request.priorityScore;
+    request.aiRecommendation = aiResult.aiRecommendation || request.aiRecommendation;
+    // Clear old cached insights so they re-generate on next load
+    request.aiImpactEstimate = '';
+    request.suggestedSchemes = [];
+  } catch (err) {
+    console.error('AI Re-evaluation failed for edit:', err.message);
+  }
+
+  request.statusHistory.push({
+    status: 'pending',
+    notes: 'Citizen edited request details.'
+  });
+
+  await request.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Request updated successfully',
+    data: request
+  });
+});
+
+// @desc    Resubmit a rejected request
+// @route   POST /api/citizen/requests/:id/resubmit
+// @access  Private
+const resubmitRequest = asyncHandler(async (req, res, next) => {
+  const request = await Request.findById(req.params.id);
+  if (!request) {
+    throw new AppError('Request not found', 404);
+  }
+
+  // Validate owner
+  if (request.user && request.user.toString() !== req.user._id.toString()) {
+    throw new AppError('Not authorized to edit this request', 403);
+  }
+
+  const { description } = req.body;
+  if (!description || !description.trim()) {
+    throw new AppError('Description is required for resubmission', 400);
+  }
+
+  request.description = description;
+  request.status = 'pending';
+
+  // Re-run AI analysis
+  try {
+    const aiResult = await analyzeCitizenRequest(
+      description,
+      request.nearbyInfrastructure || [],
+      request.duplicateCount || 0
+    );
+    request.sentiment = aiResult.sentiment || request.sentiment;
+    request.urgencyScore = aiResult.urgencyScore || request.urgencyScore;
+    request.priorityScore = aiResult.priorityScore || request.priorityScore;
+    request.aiRecommendation = aiResult.aiRecommendation || request.aiRecommendation;
+    request.aiImpactEstimate = '';
+    request.suggestedSchemes = [];
+  } catch (err) {
+    console.error('AI Re-evaluation failed for resubmission:', err.message);
+  }
+
+  request.statusHistory.push({
+    status: 'pending',
+    notes: 'Citizen resubmitted issue after rejection.'
+  });
+
+  await request.save();
+
+  // Create submission notification
+  await Notification.create({
+    user: req.user._id,
+    request: request._id,
+    type: 'submission',
+    message: `Your resubmitted issue "${request.title}" is now pending review.`
+  });
+
+  res.status(200).json({
+    success: true,
+    message: 'Request resubmitted successfully',
+    data: request
+  });
+});
+
+// @desc    Get user notifications
+// @route   GET /api/citizen/notifications
+// @access  Private
+const getMyNotifications = asyncHandler(async (req, res, next) => {
+  const notifications = await Notification.find({ user: req.user._id })
+    .sort('-createdAt')
+    .populate('request', 'title status');
+  
+  res.status(200).json({
+    success: true,
+    count: notifications.length,
+    data: notifications
+  });
+});
+
+// @desc    Mark a notification as read
+// @route   PATCH /api/citizen/notifications/:id/read
+// @access  Private
+const markNotificationRead = asyncHandler(async (req, res, next) => {
+  const notification = await Notification.findById(req.params.id);
+  if (!notification) {
+    throw new AppError('Notification not found', 404);
+  }
+
+  if (notification.user.toString() !== req.user._id.toString()) {
+    throw new AppError('Not authorized', 403);
+  }
+
+  notification.read = true;
+  await notification.save();
+
+  res.status(200).json({
+    success: true,
+    data: notification
+  });
+});
+
+// @desc    Mark all user notifications as read
+// @route   PATCH /api/citizen/notifications/read-all
+// @access  Private
+const markAllNotificationsRead = asyncHandler(async (req, res, next) => {
+  await Notification.updateMany(
+    { user: req.user._id, read: false },
+    { $set: { read: true } }
+  );
+
+  res.status(200).json({
+    success: true,
+    message: 'All notifications marked as read'
+  });
+});
+
 module.exports = {
   submitRequest,
   handleWhatsAppWebhook,
   getDistance,
   getMyRequests,
-  getMyStats
+  getMyStats,
+  getRequestDetails,
+  updateRequest,
+  resubmitRequest,
+  getMyNotifications,
+  markNotificationRead,
+  markAllNotificationsRead
 };
