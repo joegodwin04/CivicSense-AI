@@ -4,6 +4,7 @@ require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 const Request = require('../../models/Request');
 
 const sampleRequests = [
+  // --- Bengaluru Central ---
   {
     title: 'Severe Potholes on MG Road',
     description: 'Deep potholes on MG Road right outside the Metro Station. Multiple motorbikes have slipped during rains.',
@@ -36,7 +37,7 @@ const sampleRequests = [
     priorityScore: 88,
     aiRecommendation: 'Major infrastructure failure causing resource loss and localized flooding. Dispatch municipal engineers.',
     inputMethod: 'image',
-    imageUrl: 'https://images.unsplash.com/photo-1542044896530-05d85be9b11a?auto=format&fit=crop&w=400&h=300', // standard stock placeholder for demo visual appeal
+    imageUrl: 'https://images.unsplash.com/photo-1542044896530-05d85be9b11a?auto=format&fit=crop&w=400&h=300',
     duplicateCount: 6,
     nearbyInfrastructure: ["Richmond Road Maternity Hospital (hospital)"],
     status: 'processing'
@@ -59,168 +60,158 @@ const sampleRequests = [
     nearbyInfrastructure: ["Kanteerava Public Sports School (school)"],
     status: 'pending'
   },
+
+  // --- Mumbai South ---
   {
-    title: 'Hospital Waste Accumulation',
-    description: 'Medical waste and trash pile accumulates near the back entrance of City General Hospital. Dogs are scattering it.',
+    title: 'Flooded CST Underpass',
+    description: 'Monsoon water accumulation inside the CST underpass has halted vehicular traffic and pedestrian walkways.',
     location: {
       type: 'Point',
-      coordinates: [77.5930, 12.9725],
-      address: 'Cubbon Road, Behind City General Hospital, Bengaluru'
+      coordinates: [72.8360, 18.9400],
+      address: 'CST Underpass, Mumbai South'
     },
-    category: 'sanitation',
+    category: 'roads',
     sentiment: 'angry',
     urgencyScore: 9,
-    priorityScore: 95,
-    aiRecommendation: 'Biohazard hazard in direct proximity to a healthcare facility. Elevated safety risk. Clean-up crew needed within 24 hours.',
+    priorityScore: 94,
+    aiRecommendation: 'Severe flooding in central municipal corridor. Deploy drainage pump trucks immediately.',
     inputMethod: 'text',
-    duplicateCount: 8,
-    nearbyInfrastructure: ["City General Hospital (hospital)"],
+    duplicateCount: 22,
+    nearbyInfrastructure: ["St. George Hospital (hospital)"],
     status: 'pending'
   },
   {
-    title: 'Primary School Roof Leaking',
-    description: 'Leaking ceiling in the main classroom of M. G. Road Primary School during monsoons. Kids cannot study.',
+    title: 'Hanging Utility Cables near Marine Drive',
+    description: 'Loose overhead internet and power cables hanging low onto the pedestrian walkway, causing electrocution hazard.',
     location: {
       type: 'Point',
-      coordinates: [77.6010, 12.9730],
-      address: 'MG Road School Block, Bengaluru'
+      coordinates: [72.8200, 18.9430],
+      address: 'Marine Drive Promenade, Mumbai South'
     },
-    category: 'education',
+    category: 'electricity',
     sentiment: 'negative',
     urgencyScore: 7,
     priorityScore: 78,
-    aiRecommendation: 'Direct impact on active education center. Urgently schedule structural roof patching.',
+    aiRecommendation: 'Electrical wiring violation near prime tourist zone. Contact public electrical board for urgent remediation.',
     inputMethod: 'text',
-    duplicateCount: 2,
-    nearbyInfrastructure: ["M. G. Road Primary School (school)"],
+    duplicateCount: 5,
+    nearbyInfrastructure: ["Marine Drive Police Chowky (police)"],
     status: 'under-review'
   },
+
+  // --- New Delhi ---
   {
-    title: 'Open Manhole on Sidewalk',
-    description: 'An open manhole is left uncovered on the footpath. Extremely dangerous for children and pedestrians.',
+    title: 'Sewage Overflow in Connaught Place',
+    description: 'Blockage in commercial main sewer line has resulted in raw sewage water overflowing into block parking spaces.',
     location: {
       type: 'Point',
-      coordinates: [77.5990, 12.9700],
-      address: 'Lavelle Road Footpath, Bengaluru'
-    },
-    category: 'roads',
-    sentiment: 'angry',
-    urgencyScore: 10,
-    priorityScore: 98,
-    aiRecommendation: 'Severe hazard with threat to human life. Highly populated shopping corridor. Urgent response team dispatched.',
-    inputMethod: 'text',
-    duplicateCount: 19,
-    nearbyInfrastructure: ["Lavelle Road Children Hospital (hospital)", "St. Mark's School (school)"],
-    status: 'processing'
-  },
-  {
-    title: 'Sewage Line Blockage',
-    description: 'Sewer water is bubbling out from the main drain onto Bowring Hospital Road. Severe foul smell.',
-    location: {
-      type: 'Point',
-      coordinates: [77.6030, 12.9830],
-      address: 'Bowring Hospital Road, Bengaluru'
+      coordinates: [77.2197, 28.6304],
+      address: 'Block E, Connaught Place, New Delhi'
     },
     category: 'sanitation',
     sentiment: 'angry',
     urgencyScore: 8,
-    priorityScore: 86,
-    aiRecommendation: 'Sanitation overflow near public health center. Promotes disease vectors. Issue work order for sanitation jetting.',
-    inputMethod: 'voice',
-    audioTranscript: 'Yes, sewage water is bubbling out on Bowring Hospital Road. The smell is awful, please clean it up.',
-    duplicateCount: 5,
-    nearbyInfrastructure: ["Bowring Hospital (hospital)"],
-    status: 'pending'
-  },
-  {
-    title: 'Hanging Power Cables',
-    description: 'Loose high voltage electric wires are hanging low from a pole. Heavy rain could cause electrocution.',
-    location: {
-      type: 'Point',
-      coordinates: [77.6200, 12.9350],
-      address: 'Koramangala 4th Block, Bengaluru'
-    },
-    category: 'electricity',
-    sentiment: 'angry',
-    urgencyScore: 9,
     priorityScore: 89,
-    aiRecommendation: 'Critical electrical hazard. Risk of shock or fire. Electrical board must secure live lines immediately.',
+    aiRecommendation: 'Hazardous sanitation overflow in highly commercial sector. Direct municipal vacuum trucks to clean and flush sewer blockages.',
     inputMethod: 'text',
     duplicateCount: 11,
-    nearbyInfrastructure: ["Koramangala Water Tank (water point)"],
-    status: 'pending'
-  },
-  {
-    title: 'Cantonment Water Shortage',
-    description: 'No municipal drinking water supply in Cantonment ward for the last 5 days. Citizens are relying on expensive private tankers.',
-    location: {
-      type: 'Point',
-      coordinates: [77.5970, 12.9920],
-      address: 'Cantonment Area, Bengaluru'
-    },
-    category: 'water',
-    sentiment: 'negative',
-    urgencyScore: 7,
-    priorityScore: 75,
-    aiRecommendation: 'Basic utility shortage affecting multiple households. Requires review of ward distribution valves.',
-    inputMethod: 'text',
-    duplicateCount: 22,
-    nearbyInfrastructure: ["Cantonment School (school)"],
-    status: 'under-review'
-  },
-  {
-    title: 'PHC Staff Absenteeism',
-    description: 'Primary Health Center in Wilson Garden has no doctor present during scheduled morning hours. Patients are waiting outside in pain.',
-    location: {
-      type: 'Point',
-      coordinates: [77.5950, 12.9400],
-      address: 'Wilson Garden PHC, Bengaluru'
-    },
-    category: 'health',
-    sentiment: 'angry',
-    urgencyScore: 8,
-    priorityScore: 82,
-    aiRecommendation: 'Healthcare delivery failure. Public service administrative review required immediately.',
-    inputMethod: 'text',
-    duplicateCount: 4,
-    nearbyInfrastructure: ["Wilson Garden PHC (hospital)"],
-    status: 'pending'
-  },
-  {
-    title: 'Garbage Dump near Water Reservoir',
-    description: 'Large public garbage pile dumping is occurring daily near the Cubbon Park Metro Water Reservoir. Risk of water contamination.',
-    location: {
-      type: 'Point',
-      coordinates: [77.5960, 12.9750],
-      address: 'Cubbon Park, Near Metro Reservoir, Bengaluru'
-    },
-    category: 'sanitation',
-    sentiment: 'negative',
-    urgencyScore: 8,
-    priorityScore: 84,
-    aiRecommendation: 'Threat to major water security asset. Block site dumping and schedule immediate cleanup.',
-    inputMethod: 'text',
-    duplicateCount: 7,
-    nearbyInfrastructure: ["Cubbon Park Metro Water Reservoir (water point)", "City General Hospital (hospital)"],
+    nearbyInfrastructure: ["CP Metro Clinic (hospital)"],
     status: 'processing'
   },
   {
-    title: 'Pothole on School Crossing',
-    description: 'A deep pothole has formed right on the pedestrian crossing where children cross to enter St. Mark\'s School.',
+    title: 'Potholes on Ring Road',
+    description: 'Huge crater-like potholes near Lajpat Nagar flyover. Posing major risks for heavy traffic and fast vehicles.',
     location: {
       type: 'Point',
-      coordinates: [77.5960, 12.9710],
-      address: 'St. Mark\'s School Crossing, Bengaluru'
+      coordinates: [77.2435, 28.5708],
+      address: 'Lajpat Nagar Ring Road, New Delhi'
     },
     category: 'roads',
     sentiment: 'negative',
-    urgencyScore: 7,
-    priorityScore: 80,
-    aiRecommendation: 'Safety threat to school children. Priority road patching scheduled.',
+    urgencyScore: 8,
+    priorityScore: 85,
+    aiRecommendation: 'High-speed transit hazard. Schedule cold-mix asphalt overlay work overnight.',
     inputMethod: 'image',
     imageUrl: 'https://images.unsplash.com/photo-1515162305285-0293e4767cc2?auto=format&fit=crop&w=400&h=300',
-    duplicateCount: 5,
-    nearbyInfrastructure: ["St. Mark's School (school)", "City General Hospital (hospital)"],
+    duplicateCount: 7,
+    nearbyInfrastructure: ["Lajpat Nagar Metro Station (transit)"],
+    status: 'pending'
+  },
+
+  // --- Chennai Central ---
+  {
+    title: 'Water Quality Issue in T. Nagar',
+    description: 'Drinking tap water is yellowish-brown and smells strongly of rust and sewage. Affecting multiple housing societies.',
+    location: {
+      type: 'Point',
+      coordinates: [80.2337, 13.0405],
+      address: 'T. Nagar Residential Area, Chennai'
+    },
+    category: 'water',
+    sentiment: 'angry',
+    urgencyScore: 9,
+    priorityScore: 91,
+    aiRecommendation: 'Suspected public health containment leakage. Take sample tests immediately and cross-inspect sewer grid overlays.',
+    inputMethod: 'voice',
+    audioTranscript: 'Yes, the water coming from our taps in T. Nagar is completely dirty and stinking. We cannot drink this.',
+    duplicateCount: 18,
+    nearbyInfrastructure: ["T. Nagar Primary School (school)"],
+    status: 'under-review'
+  },
+  {
+    title: 'Illegal Garbage Dump near Marina Beach',
+    description: 'Trash pile accumulation on beach borders. Piles are rotting and attracting stray dogs.',
+    location: {
+      type: 'Point',
+      coordinates: [80.2825, 13.0490],
+      address: 'Marina Beach Road, Chennai'
+    },
+    category: 'sanitation',
+    sentiment: 'negative',
+    urgencyScore: 7,
+    priorityScore: 73,
+    aiRecommendation: 'Environmental cleanup required. Setup trash collection bins and execute sanitation sweep.',
+    inputMethod: 'text',
+    duplicateCount: 4,
+    nearbyInfrastructure: ["Marina Beach Public Hospital (hospital)"],
+    status: 'pending'
+  },
+
+  // --- Kolkata Uttar ---
+  {
+    title: 'Broken Streetlights near Howrah Bridge Road',
+    description: 'Street lighting is non-functional over 200m stretch. Total darkness creates security concerns during night hours.',
+    location: {
+      type: 'Point',
+      coordinates: [88.3476, 22.5851],
+      address: 'Howrah Bridge Approach Road, Kolkata'
+    },
+    category: 'electricity',
+    sentiment: 'negative',
+    urgencyScore: 7,
+    priorityScore: 79,
+    aiRecommendation: 'Traffic corridor safety concern. Coordinate quick electrical fuse replacements with regional utility provider.',
+    inputMethod: 'text',
+    duplicateCount: 9,
+    nearbyInfrastructure: ["Howrah Primary Clinic (hospital)"],
+    status: 'processing'
+  },
+  {
+    title: 'Potholes on Bidhan Sarani',
+    description: 'Road craters near main tram crossing causing heavy vehicle slow-downs and transit delays.',
+    location: {
+      type: 'Point',
+      coordinates: [88.3670, 22.5920],
+      address: 'Bidhan Sarani Tram Crossing, Kolkata'
+    },
+    category: 'roads',
+    sentiment: 'negative',
+    urgencyScore: 6,
+    priorityScore: 70,
+    aiRecommendation: 'Transit tracking delay indicator. Perform asphalt patching and secure adjacent streetcar rails.',
+    inputMethod: 'text',
+    duplicateCount: 3,
+    nearbyInfrastructure: ["Kolkata North High School (school)"],
     status: 'resolved'
   }
 ];
@@ -241,7 +232,7 @@ const seedDemoData = async () => {
 
     // Insert demo requests
     const seeded = await Request.insertMany(sampleRequests);
-    console.log(`Successfully seeded ${seeded.length} realistic citizen requests!`);
+    console.log(`Successfully seeded ${seeded.length} realistic citizen requests across India!`);
     process.exit(0);
   } catch (error) {
     console.error('Failed to seed demo requests:', error.message);
