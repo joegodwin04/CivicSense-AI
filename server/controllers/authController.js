@@ -20,15 +20,24 @@ const register = asyncHandler(async (req, res) => {
     throw new AppError('User already exists', 400);
   }
 
+  if (role === 'mp') {
+    const isGovEmail = email.endsWith('@gov.in') || email.endsWith('@nic.in');
+    if (!isGovEmail) {
+      throw new AppError('MP registration is restricted to government emails ending with @gov.in or @nic.in', 400);
+    }
+  }
+
   const user = await User.create({
     name,
     email,
     password,
     role,
-    constituency
+    constituency,
+    verified: role === 'mp' ? false : true
   });
 
   if (user) {
+    const isMpPending = user.role === 'mp' && !user.verified;
     res.status(201).json({
       success: true,
       data: {
@@ -37,7 +46,8 @@ const register = asyncHandler(async (req, res) => {
         email: user.email,
         role: user.role,
         constituency: user.constituency,
-        token: generateToken(user._id)
+        token: isMpPending ? null : generateToken(user._id),
+        isPending: isMpPending
       }
     });
   } else {
@@ -59,6 +69,10 @@ const login = asyncHandler(async (req, res) => {
   const user = await User.findOne({ email }).select('+password');
 
   if (user && (await user.matchPassword(password))) {
+    if (user.role === 'mp' && !user.verified) {
+      throw new AppError('Your MP account is pending administrator approval.', 403);
+    }
+
     res.json({
       success: true,
       data: {

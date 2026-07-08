@@ -49,6 +49,7 @@ app.use('/api/health', (req, res) => res.status(200).json({ status: 'OK', timest
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/citizen', require('./routes/citizenRoutes'));
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
+app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/ai', require('./routes/aiRoutes'));
 
 // --- Error Handling (Must be after all routes) ---
