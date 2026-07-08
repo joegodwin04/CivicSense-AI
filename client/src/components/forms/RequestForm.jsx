@@ -303,6 +303,17 @@ export default function RequestForm({ onSuccess }) {
         data.append('latitude', location.latitude);
         data.append('longitude', location.longitude);
         data.append('address', location.address || '');
+
+        if (location.raw && location.raw.results && location.raw.results[0]) {
+          const parsed = extractAddressComponents(location.raw.results[0].address_components);
+          data.append('landmark', parsed.landmark || '');
+          data.append('locality', parsed.locality || '');
+          data.append('ward', parsed.ward || '');
+          data.append('city', parsed.city || '');
+          data.append('district', parsed.district || '');
+          data.append('state', parsed.state || '');
+          data.append('postalCode', parsed.postalCode || '');
+        }
       }
 
       const res = await citizenService.submitRequest(data);
