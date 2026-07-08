@@ -2,8 +2,9 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { submitRequest, handleWhatsAppWebhook } = require('../controllers/citizenController');
+const { submitRequest, handleWhatsAppWebhook, getMyRequests, getMyStats } = require('../controllers/citizenController');
 const { getRequests } = require('../controllers/dashboardController');
+const { protect, optionalProtect } = require('../middleware/authMiddleware');
 
 // Ensure uploads directory exists
 if (!fs.existsSync('uploads')) {
@@ -34,11 +35,18 @@ const cpUpload = upload.fields([
   { name: 'audio', maxCount: 1 }
 ]);
 
+// @desc    Get user's requests and stats
+// @route   GET /api/citizen/my-requests
+// @route   GET /api/citizen/my-stats
+// @access  Private
+router.get('/my-requests', protect, getMyRequests);
+router.get('/my-stats', protect, getMyStats);
+
 // @desc    Submit a new citizen request
 // @route   POST /api/citizen/submit
-// @access  Public
-router.post('/submit', cpUpload, submitRequest);
-router.post('/requests', cpUpload, submitRequest);
+// @access  Public (Optional Auth)
+router.post('/submit', optionalProtect, cpUpload, submitRequest);
+router.post('/requests', optionalProtect, cpUpload, submitRequest);
 router.get('/requests', getRequests);
 
 // @desc    WhatsApp Webhook triage portal (Twilio Webhook body payload)

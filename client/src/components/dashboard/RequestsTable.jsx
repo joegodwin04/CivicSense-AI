@@ -4,14 +4,16 @@ import { motion } from 'framer-motion';
 import { ArrowUpDown, Users, Sparkles, MapPin, Mic, FileText } from 'lucide-react';
 import { getImageUrl } from '../../utils/api';
 
+import { CATEGORY_COLORS } from '../../utils/colors';
+
 const CATEGORY_CONFIG = {
-  roads:       { label: 'Roads',       color: 'text-blue-300',    bg: 'bg-blue-950/20 border-blue-800/40',    dot: '#3b82f6' },
-  water:       { label: 'Water',       color: 'text-cyan-300',    bg: 'bg-cyan-950/20 border-cyan-800/40',    dot: '#06b6d4' },
-  health:      { label: 'Health',      color: 'text-red-300',     bg: 'bg-red-950/20 border-red-800/40',      dot: '#ef4444' },
-  education:   { label: 'Education',   color: 'text-indigo-300',  bg: 'bg-indigo-950/20 border-indigo-800/40', dot: '#6366f1' },
-  electricity: { label: 'Electricity', color: 'text-amber-300',   bg: 'bg-amber-950/20 border-amber-800/40',  dot: '#f59e0b' },
-  sanitation:  { label: 'Sanitation',  color: 'text-emerald-300', bg: 'bg-emerald-950/20 border-emerald-800/40', dot: '#10b981' },
-  other:       { label: 'Other',       color: 'text-slate-300',   bg: 'bg-slate-900/20 border-slate-700/40',  dot: '#6b7280' },
+  roads:       { label: 'Roads',       color: 'text-blue-300',    bg: 'bg-blue-950/20 border-blue-800/40',    dot: CATEGORY_COLORS.roads },
+  water:       { label: 'Water',       color: 'text-cyan-300',    bg: 'bg-cyan-950/20 border-cyan-800/40',    dot: CATEGORY_COLORS.water },
+  health:      { label: 'Health',      color: 'text-red-300',     bg: 'bg-red-950/20 border-red-800/40',      dot: CATEGORY_COLORS.health },
+  education:   { label: 'Education',   color: 'text-indigo-300',  bg: 'bg-indigo-950/20 border-indigo-800/40', dot: CATEGORY_COLORS.education },
+  electricity: { label: 'Electricity', color: 'text-amber-300',   bg: 'bg-amber-950/20 border-amber-800/40',  dot: CATEGORY_COLORS.electricity },
+  sanitation:  { label: 'Sanitation',  color: 'text-emerald-300', bg: 'bg-emerald-950/20 border-emerald-800/40', dot: CATEGORY_COLORS.sanitation },
+  other:       { label: 'Other',       color: 'text-slate-300',   bg: 'bg-slate-900/20 border-slate-700/40',  dot: CATEGORY_COLORS.other },
 };
 
 const STATUS_CONFIG = {

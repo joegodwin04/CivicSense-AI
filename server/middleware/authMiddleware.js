@@ -36,6 +36,24 @@ const protect = asyncHandler(async (req, res, next) => {
   }
 });
 
+// Optional protect - verifies token if present, but doesn't throw if missing
+const optionalProtect = asyncHandler(async (req, res, next) => {
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith('Bearer')
+  ) {
+    try {
+      const token = req.headers.authorization.split(' ')[1];
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+      req.user = await User.findById(decoded.id).select('-password');
+    } catch (error) {
+      // Don't throw, just let req.user be undefined
+      console.warn('Optional auth token validation failed:', error.message);
+    }
+  }
+  next();
+});
+
 // Grant access to specific roles
 const authorize = (...roles) => {
   return (req, res, next) => {
@@ -54,5 +72,6 @@ const authorize = (...roles) => {
 
 module.exports = {
   protect,
+  optionalProtect,
   authorize
 };

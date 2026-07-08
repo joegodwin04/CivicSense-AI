@@ -15,7 +15,7 @@ const INITIAL_FORM = {
   phone: '',
 };
 
-export default function RequestForm() {
+export default function RequestForm({ onSuccess }) {
   const [form, setForm] = useState(INITIAL_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -115,7 +115,9 @@ export default function RequestForm() {
     try {
       const data = new FormData();
       data.append('description', form.description);
-      data.append('category', form.category || 'other');
+      if (form.category) {
+        data.append('category', form.category);
+      }
       data.append('language', language);
       if (form.name) data.append('name', form.name);
       if (form.phone) data.append('phone', form.phone);
@@ -147,8 +149,9 @@ export default function RequestForm() {
       addNotification({ 
         type: 'success', 
         title: 'Request Analyzed!', 
-        message: res.isDuplicate ? 'Duplicate detected & cataloged.' : 'AI analysis finished and queued.' 
+        message: res.isDuplicate ? 'Duplicate detected & linked.' : 'AI analysis finished and queued.' 
       });
+      if (onSuccess) onSuccess();
     } catch (err) {
       addNotification({ 
         type: 'error', 

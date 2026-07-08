@@ -30,7 +30,7 @@ function getDistance(lat1, lon1, lat2, lon2) {
 // @route   POST /api/citizen/submit (also mapped to /requests)
 // @access  Public
 const submitRequest = asyncHandler(async (req, res, next) => {
-  const { description } = req.body;
+  const { description, category: manualCategory } = req.body;
 
   // Validate we have a description (or a voice file / image which contains visual description)
   const hasPhoto = req.files && req.files['photo'] && req.files['photo'][0];
@@ -151,11 +151,17 @@ const submitRequest = asyncHandler(async (req, res, next) => {
     }
   }
 
+  // Resolve final category BEFORE the duplicate check so the search is consistent
+  // with what will actually be saved.  Manual > AI > default('other').
+  const resolvedCategory = (manualCategory && manualCategory.trim() && manualCategory !== '')
+    ? manualCategory.trim().toLowerCase()
+    : (aiResult.category || 'other');
+
   // 2. Geospatial Duplicate/Cluster Check
   // Same category, within last 14 days, and within 150m
   const dateLimit = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
   const duplicate = await Request.findOne({
-    category: aiResult.category,
+    category: resolvedCategory,
     createdAt: { $gte: dateLimit },
     location: {
       $near: {
@@ -196,7 +202,7 @@ const submitRequest = asyncHandler(async (req, res, next) => {
   }
 
   // 3. Save new Request
-  const finalTitle = req.body.title || `${aiResult.category.charAt(0).toUpperCase() + aiResult.category.slice(1)} Issue`;
+  const finalTitle = req.body.title || `${resolvedCategory.charAt(0).toUpperCase() + resolvedCategory.slice(1)} Issue`;
 
   let finalDescription = description;
   if (audioTranscript) finalDescription = audioTranscript;
@@ -214,7 +220,7 @@ const submitRequest = asyncHandler(async (req, res, next) => {
       coordinates: [lng, lat],
       address: address
     },
-    category: aiResult.category,
+    category: resolvedCategory,
     sentiment: aiResult.sentiment,
     urgencyScore: aiResult.urgencyScore,
     priorityScore: aiResult.priorityScore,
@@ -224,7 +230,8 @@ const submitRequest = asyncHandler(async (req, res, next) => {
     inputMethod: inputMethod,
     duplicateCount: 0,
     nearbyInfrastructure: nearbyInfra,
-    status: 'pending'
+    status: 'pending',
+    user: req.user ? req.user._id : null
   });
 
   res.status(201).json({
@@ -375,8 +382,49 @@ Thank you for your report.
 </Response>`);
 });
 
+// @desc    Get user's requests
+// @route   GET /api/citizen/my-requests
+// @access  Private
+const getMyRequests = asyncHandler(async (req, res, next) => {
+  const requests = await Request.find({ user: req.user._id }).sort('-createdAt');
+  res.status(200).json({
+    success: true,
+    count: requests.length,
+    data: requests
+  });
+});
+
+// @desc    Get user's stats
+// @route   GET /api/citizen/my-stats
+// @access  Private
+const getMyStats = asyncHandler(async (req, res, next) => {
+  const stats = await Request.aggregate([
+    { $match: { user: req.user._id } },
+    { $group: { _id: '$status', count: { $sum: 1 } } }
+  ]);
+  
+  const defaultStats = { pending: 0, processing: 0, 'under-review': 0, resolved: 0, rejected: 0 };
+  stats.forEach(stat => {
+    if (defaultStats[stat._id] !== undefined) {
+      defaultStats[stat._id] = stat.count;
+    }
+  });
+  
+  const total = Object.values(defaultStats).reduce((acc, curr) => acc + curr, 0);
+  
+  res.status(200).json({
+    success: true,
+    data: {
+      ...defaultStats,
+      total
+    }
+  });
+});
+
 module.exports = {
   submitRequest,
   handleWhatsAppWebhook,
-  getDistance
+  getDistance,
+  getMyRequests,
+  getMyStats
 };

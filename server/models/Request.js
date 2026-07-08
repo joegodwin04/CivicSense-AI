@@ -72,6 +72,20 @@ const requestSchema = new mongoose.Schema(
     nearbyInfrastructure: {
       type: [String],
       default: []
+    },
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null
+    },
+    isDuplicate: {
+      type: Boolean,
+      default: false
+    },
+    parentRequest: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Request',
+      default: null
     }
   },
   { timestamps: true }

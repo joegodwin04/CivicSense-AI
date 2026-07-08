@@ -18,15 +18,42 @@ const inputModes = [
   { icon: Mic, label: 'Voice Record' },
 ];
 
+import CitizenDashboard from '../components/dashboard/CitizenDashboard';
+import { useApp } from '../context/AppContext';
+
 export default function CitizenPortal() {
+  const { isAuthenticated, user } = useApp();
   const [liveCount, setLiveCount] = useState(null);
 
   useEffect(() => {
-    api.get('/dashboard/stats')
-      .then(res => setLiveCount(res.data.data?.totals?.totalRequests))
+    api.get('/citizen/requests')
+      .then(res => {
+        // res.data may be an array or { data: [...] }
+        const list = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+        setLiveCount(list.length);
+      })
       .catch(() => {});
   }, []);
 
+  // If authenticated as citizen, render the personalized dashboard
+  if (isAuthenticated && user?.role === 'citizen') {
+    return (
+      <div className="min-h-screen bg-[#0F2A44] pt-24 pb-12">
+        <div 
+          className="fixed inset-0 opacity-[0.02] pointer-events-none z-0"
+          style={{
+            backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)',
+            backgroundSize: '40px 40px',
+          }}
+        />
+        <div className="relative z-10 max-w-7xl mx-auto px-6">
+          <CitizenDashboard />
+        </div>
+      </div>
+    );
+  }
+
+  // Otherwise, render the public reporting portal (Anonymous mode)
   return (
     <div className="min-h-screen bg-[#0F2A44] pt-16 relative">
       

@@ -16,10 +16,11 @@ const categoryMap = {
 // @route   GET /api/dashboard/stats
 // @access  Private (MP/Admin)
 const getStats = asyncHandler(async (req, res) => {
-  const totalRequests = await Request.countDocuments();
-  const unresolved = await Request.countDocuments({ status: { $ne: 'resolved' } });
+  const totalRequests = await Request.countDocuments({ isDuplicate: { $ne: true } });
+  const unresolved = await Request.countDocuments({ status: { $ne: 'resolved' }, isDuplicate: { $ne: true } });
 
   const avgResult = await Request.aggregate([
+    { $match: { isDuplicate: { $ne: true } } },
     {
       $group: {
         _id: null,
@@ -31,6 +32,7 @@ const getStats = asyncHandler(async (req, res) => {
 
   // Aggregate request counts by category
   const categoryCounts = await Request.aggregate([
+    { $match: { isDuplicate: { $ne: true } } },
     {
       $group: {
         _id: '$category',
@@ -74,7 +76,7 @@ const getRequests = asyncHandler(async (req, res) => {
   const limit = parseInt(req.query.limit) || 100;
   
   // Fetch requests, sorting by priorityScore descending
-  const requests = await Request.find({})
+  const requests = await Request.find({ isDuplicate: { $ne: true } })
     .sort({ priorityScore: -1, createdAt: -1 })
     .limit(limit);
 
@@ -89,7 +91,7 @@ const getRequests = asyncHandler(async (req, res) => {
 // @route   GET /api/dashboard/ai-priority
 // @access  Private (MP/Admin)
 const getAIPriority = asyncHandler(async (req, res) => {
-  const request = await Request.findOne({})
+  const request = await Request.findOne({ isDuplicate: { $ne: true } })
     .sort({ priorityScore: -1 })
     .limit(1);
 
