@@ -3,6 +3,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { submitRequest, handleWhatsAppWebhook } = require('../controllers/citizenController');
+const { getRequests } = require('../controllers/dashboardController');
 
 // Ensure uploads directory exists
 if (!fs.existsSync('uploads')) {
@@ -38,6 +39,7 @@ const cpUpload = upload.fields([
 // @access  Public
 router.post('/submit', cpUpload, submitRequest);
 router.post('/requests', cpUpload, submitRequest);
+router.get('/requests', getRequests);
 
 // @desc    WhatsApp Webhook triage portal (Twilio Webhook body payload)
 // @route   POST /api/citizen/whatsapp

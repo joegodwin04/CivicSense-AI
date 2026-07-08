@@ -31,4 +31,12 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+export const getImageUrl = (path) => {
+  if (!path) return '';
+  if (path.startsWith('http')) return path;
+  
+  const baseURL = getBaseURL().replace(/\/api$/, '');
+  return `${baseURL}${path}`;
+};
+
 export default api;

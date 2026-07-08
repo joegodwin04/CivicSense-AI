@@ -58,10 +58,18 @@ const submitRequest = asyncHandler(async (req, res, next) => {
     .filter((infra) => getDistance(lat, lng, infra.lat, infra.lng) <= 1000)
     .map((infra) => `${infra.name} (${infra.type})`);
 
-  let aiResult;
+  let aiResult = {
+    category: 'other',
+    sentiment: 'neutral',
+    urgencyScore: 1,
+    priorityScore: 0,
+    aiRecommendation: 'Pending AI Analysis due to service unavailability'
+  };
   let inputMethod = 'text';
   let imageUrl = null;
   let audioTranscript = null;
+  const language = req.body.language || 'auto';
+  const textContext = language !== 'auto' ? `(Language: ${language}) ${description || ''}` : (description || 'Civic issue report');
 
   // 1. Process Multimodal Inputs
   if (hasPhoto) {
@@ -83,13 +91,17 @@ const submitRequest = asyncHandler(async (req, res, next) => {
     const mimeType = photoFile.mimetype;
 
     // Run Gemini image analysis
-    aiResult = await analyzeCitizenImage(
-      photoBase64,
-      mimeType,
-      description || 'Civic issue report',
-      nearbyInfra,
-      0
-    );
+    try {
+      aiResult = await analyzeCitizenImage(
+        photoBase64,
+        mimeType,
+        textContext,
+        nearbyInfra,
+        0
+      );
+    } catch (err) {
+      console.error('Image AI analysis failed:', err.message);
+    }
   } else if (hasAudio) {
     inputMethod = 'voice';
     const audioFile = req.files['audio'][0];
@@ -110,21 +122,33 @@ const submitRequest = asyncHandler(async (req, res, next) => {
     const mimeType = audioFile.mimetype || 'audio/webm';
 
     // Transcribe audio using Gemini
-    audioTranscript = await transcribeAudio(audioBase64, mimeType);
+    try {
+      audioTranscript = await transcribeAudio(audioBase64, mimeType);
+    } catch (err) {
+      console.error('Audio transcription failed:', err.message);
+    }
 
     // Analyze transcribed text
-    aiResult = await analyzeCitizenRequest(
-      audioTranscript,
-      nearbyInfra,
-      0
-    );
+    try {
+      aiResult = await analyzeCitizenRequest(
+        audioTranscript || textContext,
+        nearbyInfra,
+        0
+      );
+    } catch (err) {
+      console.error('Audio AI analysis failed:', err.message);
+    }
   } else {
     // Text-only submission
-    aiResult = await analyzeCitizenRequest(
-      description,
-      nearbyInfra,
-      0
-    );
+    try {
+      aiResult = await analyzeCitizenRequest(
+        textContext,
+        nearbyInfra,
+        0
+      );
+    } catch (err) {
+      console.error('Text AI analysis failed:', err.message);
+    }
   }
 
   // 2. Geospatial Duplicate/Cluster Check
@@ -149,14 +173,18 @@ const submitRequest = asyncHandler(async (req, res, next) => {
     duplicate.duplicateCount += 1;
 
     // Recompute priority score using updated duplicateCount
-    const recomputeResult = await analyzeCitizenRequest(
-      duplicate.description,
-      duplicate.nearbyInfrastructure || [],
-      duplicate.duplicateCount
-    );
+    try {
+      const recomputeResult = await analyzeCitizenRequest(
+        duplicate.description,
+        duplicate.nearbyInfrastructure || [],
+        duplicate.duplicateCount
+      );
 
-    duplicate.priorityScore = recomputeResult.priorityScore;
-    duplicate.aiRecommendation = recomputeResult.aiRecommendation;
+      duplicate.priorityScore = recomputeResult.priorityScore;
+      duplicate.aiRecommendation = recomputeResult.aiRecommendation;
+    } catch (err) {
+      console.error('AI Recompute failed for duplicate:', err.message);
+    }
     await duplicate.save();
 
     return res.status(200).json({
@@ -170,9 +198,17 @@ const submitRequest = asyncHandler(async (req, res, next) => {
   // 3. Save new Request
   const finalTitle = req.body.title || `${aiResult.category.charAt(0).toUpperCase() + aiResult.category.slice(1)} Issue`;
 
+  let finalDescription = description;
+  if (audioTranscript) finalDescription = audioTranscript;
+  if (language !== 'auto' && finalDescription) {
+    finalDescription = `(Language: ${language}) ${finalDescription}`;
+  } else if (!finalDescription) {
+    finalDescription = 'Civic issue report';
+  }
+
   const newRequest = await Request.create({
     title: finalTitle,
-    description: description || audioTranscript || 'Civic issue report',
+    description: finalDescription,
     location: {
       type: 'Point',
       coordinates: [lng, lat],
@@ -219,7 +255,13 @@ const handleWhatsAppWebhook = asyncHandler(async (req, res, next) => {
     .filter((infra) => getDistance(lat, lng, infra.lat, infra.lng) <= 1000)
     .map((infra) => `${infra.name} (${infra.type})`);
 
-  let aiResult;
+  let aiResult = {
+    category: 'other',
+    sentiment: 'neutral',
+    urgencyScore: 1,
+    priorityScore: 0,
+    aiRecommendation: 'Pending AI Analysis due to service unavailability'
+  };
   let inputMethod = 'whatsapp_text';
   let imageUrl = null;
 
@@ -242,18 +284,26 @@ const handleWhatsAppWebhook = asyncHandler(async (req, res, next) => {
       );
     } catch (err) {
       console.error('Failed to parse Twilio media image with Gemini. Falling back to text-only analysis.');
+      try {
+        aiResult = await analyzeCitizenRequest(
+          messageBody || 'Civic issue report with image attachment via WhatsApp',
+          nearbyInfra,
+          0
+        );
+      } catch (innerErr) {
+        console.error('Text fallback for WhatsApp also failed:', innerErr.message);
+      }
+    }
+  } else {
+    try {
       aiResult = await analyzeCitizenRequest(
-        messageBody || 'Civic issue report with image attachment via WhatsApp',
+        messageBody || 'Civic issue report via WhatsApp',
         nearbyInfra,
         0
       );
+    } catch (err) {
+      console.error('Text AI analysis for WhatsApp failed:', err.message);
     }
-  } else {
-    aiResult = await analyzeCitizenRequest(
-      messageBody || 'Civic issue report via WhatsApp',
-      nearbyInfra,
-      0
-    );
   }
 
   // Duplicate Check (150m, 14 days, same category)
@@ -274,13 +324,17 @@ const handleWhatsAppWebhook = asyncHandler(async (req, res, next) => {
 
   if (duplicate) {
     duplicate.duplicateCount += 1;
-    const recomputeResult = await analyzeCitizenRequest(
-      duplicate.description,
-      duplicate.nearbyInfrastructure || [],
-      duplicate.duplicateCount
-    );
-    duplicate.priorityScore = recomputeResult.priorityScore;
-    duplicate.aiRecommendation = recomputeResult.aiRecommendation;
+    try {
+      const recomputeResult = await analyzeCitizenRequest(
+        duplicate.description,
+        duplicate.nearbyInfrastructure || [],
+        duplicate.duplicateCount
+      );
+      duplicate.priorityScore = recomputeResult.priorityScore;
+      duplicate.aiRecommendation = recomputeResult.aiRecommendation;
+    } catch (err) {
+      console.error('AI Recompute failed for WhatsApp duplicate:', err.message);
+    }
     await duplicate.save();
   } else {
     await Request.create({

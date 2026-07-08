@@ -103,6 +103,7 @@ export default function RequestForm() {
       const data = new FormData();
       data.append('description', form.description);
       data.append('category', form.category || 'other');
+      data.append('language', language);
       if (form.name) data.append('name', form.name);
       if (form.phone) data.append('phone', form.phone);
       if (photo) data.append('photo', photo);

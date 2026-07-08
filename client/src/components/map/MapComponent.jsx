@@ -34,7 +34,7 @@ export default function MapComponent() {
   useEffect(() => {
     const fetchRequests = async () => {
       try {
-        const response = await api.get('/dashboard/requests');
+        const response = await api.get('/citizen/requests');
         // Filter out requests that don't have valid coordinates
         const geocoded = (response.data.data || []).filter(
           (req) => req.location?.coordinates && req.location.coordinates.length === 2

@@ -1,0 +1,15 @@
+* [33m0a81a7f[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m adminpage
+* [33m637e0de[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m chore: ignore local testing uploads and build bundles in gitignore
+* [33macc9c14[m docs: add Live Demo and CI Build badges to README top
+* [33m72d2229[m test: add unit tests for geospatial deduplication queries and duplicate counter increments
+* [33m938784f[m feat: enforce input validation on citizen submission endpoint
+* [33m7caf43a[m feat: configure client api base url dynamic production fallback
+* [33ma1684e2[m fix: secure server logs and resolve credential-based CORS validation blocks
+* [33m03c794f[m docs: Add UI preview images and update screenshot mappings in README
+* [33m549af33[m feat: Add WhatsApp webhook, unit testing suite, CI config, and MIT license
+* [33m6d86ce0[m frontend
+* [33m2bfaca8[m push
+* [33m42a0cb8[m development
+* [33m52fbb8b[m Frontend
+* [33m2c8ac96[m cleanup
+* [33m8236f18[m Initial commit - CivicSense AI

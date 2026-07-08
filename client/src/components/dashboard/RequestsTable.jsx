@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowUpDown, Users, Sparkles, MapPin, Mic, FileText } from 'lucide-react';
+import { getImageUrl } from '../../utils/api';
 
 const CATEGORY_CONFIG = {
   roads:       { label: 'Roads',       color: 'text-blue-300',    bg: 'bg-blue-950/20 border-blue-800/40',    dot: '#3b82f6' },
@@ -106,7 +107,7 @@ export default function RequestsTable({ requests = [], loading = false }) {
                     <div className="flex items-center gap-2.5 max-w-[220px]">
                       {row.imageUrl && (
                         <div className="w-8 h-8 rounded overflow-hidden shrink-0 border border-white/15">
-                          <img src={row.imageUrl} alt="" className="w-full h-full object-cover" />
+                          <img src={getImageUrl(row.imageUrl)} alt="" className="w-full h-full object-cover" />
                         </div>
                       )}
                       <div className="min-w-0">
