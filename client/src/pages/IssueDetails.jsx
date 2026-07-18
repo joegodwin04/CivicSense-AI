@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  ArrowLeft, Calendar, MapPin, User, Sparkles, Shield, AlertTriangle, 
+  ArrowLeft, Calendar, MapPin, User, Users, Sparkles, Shield, AlertTriangle, 
   CheckCircle2, Clock, PlayCircle, XCircle, Mic, HelpCircle, Layers, ExternalLink, Edit2, Check 
 } from 'lucide-react';
 import api, { getImageUrl } from '../utils/api';
