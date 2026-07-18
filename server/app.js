@@ -47,6 +47,14 @@ const limiter = rateLimit({
 app.use('/api', limiter);
 
 // --- Routes ---
+app.get("/", (req, res) => {
+  res.json({
+    success: true,
+    message: "CivicSense AI Backend API is running 🚀",
+    health: "/api/health"
+  });
+});
+
 app.use('/api/health', (req, res) => res.status(200).json({ status: 'OK', timestamp: new Date() }));
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/citizen', require('./routes/citizenRoutes'));
