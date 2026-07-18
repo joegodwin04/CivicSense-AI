@@ -1,15 +1,45 @@
-# CivicSense AI
+<div align="center">
 
-🌐 **[LIVE DEMO PORTAL (Vercel)](https://civic-sense-ai-roan.vercel.app/)** &nbsp;|&nbsp; 🖥️ **[API Server (Render)](https://civicsense-ai-88cr.onrender.com)**
-
-[![Live Demo](https://img.shields.io/badge/DEMO-LIVE_NOW-purple?style=for-the-badge&logo=vercel)](https://civicsense-ai.vercel.app)
-[![CI Build Status](https://img.shields.io/github/actions/workflow/status/joegodwin04/CivicSense-AI/ci.yml?branch=main&style=for-the-badge&logo=github)](https://github.com/joegodwin04/CivicSense-AI/actions)
-
----
+# 🏛️ CivicSense AI
 
 ### Decision Support System for Members of Parliament (MPs)
 
-CivicSense AI is a next-generation civic intelligence dashboard and citizen engagement portal. It enables citizens to report constituency development issues (roads, water, healthcare, sanitation, education) using **text, voice, and image uploads**. Behind the scenes, the system connects directly to **Google Gemini AI** to automatically translate submissions, classify categories, analyze urgency, and cross-reference demographic and proximity data with critical local infrastructure (schools, hospitals, water supplies) to compute a live **Priority Score (1-100)** for decision makers.
+**An AI-powered civic intelligence platform that turns raw citizen complaints into prioritized, data-backed action items.**
+
+🌐 **[LIVE DEMO PORTAL (Vercel)](https://civic-sense-ai-roan.vercel.app/)** &nbsp;|&nbsp; 🖥️ **[API Server (Render)](https://civicsense-ai-88cr.onrender.com)**
+
+![JavaScript](https://img.shields.io/badge/JavaScript-86.8%25-F7DF1E?style=flat-square&logo=javascript&logoColor=black)
+![React](https://img.shields.io/badge/Frontend-React%20%2B%20Vite-61DAFB?style=flat-square&logo=react&logoColor=black)
+![Node](https://img.shields.io/badge/Backend-Node.js%20%2B%20Express-339933?style=flat-square&logo=node.js&logoColor=white)
+![MongoDB](https://img.shields.io/badge/Database-MongoDB%20Atlas-47A248?style=flat-square&logo=mongodb&logoColor=white)
+![Gemini](https://img.shields.io/badge/AI-Google%20Gemini-4285F4?style=flat-square&logo=googlegemini&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-lightgrey?style=flat-square)
+
+</div>
+
+---
+
+## 📖 Overview
+
+CivicSense AI is a next-generation civic intelligence dashboard and citizen engagement portal. It lets citizens report constituency development issues — roads, water, healthcare, sanitation, education — using **text, voice, and image uploads**.
+
+Behind the scenes, the system connects directly to **Google Gemini AI** to:
+- translate and transcribe submissions in local languages,
+- classify categories and analyze urgency,
+- cross-reference demographic and proximity data against critical local infrastructure (schools, hospitals, water supplies),
+
+...and computes a live **Priority Score (1–100)** to help MPs decide what to fix first.
+
+---
+
+## ✨ Core Features
+
+| Feature | Description |
+|---|---|
+| 🎙️ **Multimodal Analysis** | Accepts photo uploads (Gemini vision analysis) and voice notes (Gemini speech transcription + translation) in local languages. |
+| 📍 **Geospatial Deduplication** | On submission, MongoDB runs a `$near` geospatial lookup (150m radius, last 14 days). Matches increment the existing report's `duplicateCount` and trigger a Priority Score recompute — no duplicate spam. |
+| 🏥 **Infrastructure Overlay** | Finds nearby critical infrastructure (schools, hospitals, etc.) within 1km via Haversine distance, feeding proximity risk into Gemini's prioritization. |
+| 📊 **MP Intelligence Dashboard** | A gated dashboard for MPs to view prioritized reports, hotspots, and demand clusters on a live map. |
 
 ---
 
@@ -18,7 +48,7 @@ CivicSense AI is a next-generation civic intelligence dashboard and citizen enga
 ```mermaid
 graph TD
     subgraph Client Application (Vite + React)
-        CP[Citizen Voice Portal] -->|FormData with Text, Images, Voice| APIClient[Axios API Client]
+        CP[Citizen Voice Portal] -->|FormData: Text, Images, Voice| APIClient[Axios API Client]
         MPD[MP Intelligence Dashboard] -->|Auth JWT token| APIClient
         Map[Google Maps Component] <--|Dynamic Marker Overlay| APIClient
     end
@@ -37,19 +67,37 @@ graph TD
     end
 ```
 
-### Core Logic Features:
-1. **Multimodal Analysis**: Accepts visual photo inputs (Gemini multimodal vision analysis) and voice inputs (Gemini speech transcription and translation) in local languages.
-2. **Geospatial Deduplication / Clustering**: When a report is submitted, MongoDB runs a `$near` geospatial lookup (150m radius) within the last 14 days. If matched, the report increments the existing report's `duplicateCount` and recomputes the Priority Score using Gemini, preventing duplicate record spam.
-3. **Demographic / Infrastructure Overlay**: Finds local critical infrastructure (schools, hospitals, etc.) within 1km using Haversine calculation, incorporating proximity risk factors into Gemini's prioritization.
-4. **Messaging App Channel (WhatsApp Integration)**: Twilio-compatible Webhook stub at `/api/citizen/whatsapp` accepting incoming text/image payloads, running the exact same geocoding, duplicate checking, and Gemini classification pipelines.
+---
+
+## 🧰 Tech Stack
+
+- **Frontend:** React + Vite, Axios, Google Maps JS API
+- **Backend:** Node.js, Express, Multer
+- **Database:** MongoDB Atlas (2dsphere geospatial indexing)
+- **AI:** Google Gemini (`gemini-2.5-pro` / `gemini-2.5-flash`) — multimodal vision, speech transcription, translation, prioritization
+- **Auth:** JWT
+- **Deployment:** Vercel (client) + Render (server)
 
 ---
 
-## 🔑 Required API Keys & Env Variables
+## 📂 Project Structure
 
-Create `.env` files in both directories following the templates:
+```
+CivicSense-AI/
+├── client/          # React + Vite frontend
+├── server/          # Express + Node.js backend
+├── .gitignore
+└── README.md
+```
 
-### Backend Configuration (`server/.env`)
+---
+
+## 🔑 Environment Variables
+
+Create `.env` files in both `client/` and `server/` following the templates below.
+
+### Backend (`server/.env`)
+
 ```env
 PORT=5000
 NODE_ENV=development
@@ -60,7 +108,8 @@ JWT_SECRET=your_jwt_signing_secret
 CLIENT_URL=http://localhost:5173
 ```
 
-### Client Configuration (`client/.env`)
+### Frontend (`client/.env`)
+
 ```env
 VITE_GOOGLE_MAPS_API_KEY=your_google_maps_javascript_api_key
 VITE_API_URL=http://localhost:5000/api
@@ -68,9 +117,10 @@ VITE_API_URL=http://localhost:5000/api
 
 ---
 
-## 🚀 Setup & Execution
+## 🚀 Getting Started
 
-### 1. Install Dependencies
+### 1. Install dependencies
+
 ```bash
 # Install root, client and server packages
 npm install
@@ -78,8 +128,8 @@ npm install --prefix client
 npm install --prefix server
 ```
 
-### 2. Seed Demo Accounts & Data
-We supply scripts to populate the database for instant testing/evaluation:
+### 2. Seed demo accounts & data
+
 ```bash
 # Seed the MP account (mp@civicsense.ai / password123)
 npm run seed:mp --prefix server
@@ -88,55 +138,45 @@ npm run seed:mp --prefix server
 npm run seed:data --prefix server
 ```
 
-### 3. Run Unit Tests (Native Node Runner)
-Verify the Haversine distance functions and MongoDB Request schema validation limits:
-```bash
-npm test --prefix server
-```
+### 3. Run locally
 
-### 4. Run Locally
 ```bash
 # Boots both frontend and backend concurrently
 npm run dev
 ```
-- **Citizen Portal**: `http://localhost:5173/citizen`
-- **MP Dashboard (Gated)**: `http://localhost:5173/dashboard` (Log in with `mp@civicsense.ai` / `password123`)
+
+| Portal | URL |
+|---|---|
+| Citizen Portal | `http://localhost:5173/citizen` |
+| MP Dashboard (gated) | `http://localhost:5173/dashboard` — log in with `mp@civicsense.ai` / `password123` |
 
 ---
 
-## 📲 WhatsApp Webhook API Blueprints
+## 📦 Deployment
 
-For the "messaging app" input channel integration:
-* **Endpoint**: `POST /api/citizen/whatsapp`
-* **Content-Type**: `application/x-www-form-urlencoded`
-* **Payload Parameters** (Standard Twilio webhook signature):
-  - `From`: Sender identifier (e.g. `whatsapp:+919876543210`)
-  - `Body`: Complaint description text
-  - `NumMedia`: Optional attachment count (`1`)
-  - `MediaUrl0`: Optional attachment file url (image, document, etc.)
-  - `MediaContentType0`: Attachment MIME type (`image/jpeg`)
-* **Response**: Returns standard TwiML XML confirmation replies immediately back to the WhatsApp screen.
+- **Frontend** → deployed on **Vercel**, with SPA router redirection configured in `client/vercel.json`.
+- **Backend** → deployed on **Render**, with build and env variable blueprints defined in `render.yaml`.
+
+Live instances:
+- Client: **https://civic-sense-ai-roan.vercel.app/**
+- API: **https://civicsense-ai-88cr.onrender.com**
+
+> ⚠️ The Render free-tier instance may spin down when idle — the first API request after inactivity can take 30–50s to wake up.
 
 ---
 
-## 📦 Deployment Configuration
+## 🗺️ Roadmap
 
-- **Frontend**: Configured for **Vercel** deployment with SPA router redirection set up in `client/vercel.json`.
-- **Backend**: Configured for **Render** deployment with build and variable blueprints set up in `render.yaml`.
-- **CI / CD Pipeline**: Managed automatically via `.github/workflows/ci.yml` running lint, testing, and compilation tasks on every commit.
+- [ ] SMS-based reporting for low-connectivity areas
+- [ ] Multi-constituency support for larger dashboards
+- [ ] Public transparency view (aggregate stats without PII)
 
 ---
 
-## 🖼️ User Interface Previews
+## 🤝 Contributing
 
-### 1. Citizen Portal
-*(Enables high-trust text, photo, and voice complaint filings in any regional language)*
-![Citizen Submission Flow](https://raw.githubusercontent.com/joegodwin04/CivicSense-AI/main/client/public/previews/citizen_portal.png)
+Contributions, issues, and feature requests are welcome. Feel free to fork the repo and open a pull request.
 
-### 2. MP Decision Dashboard
-*(Dense analytical grid prioritizing tasks using Gemini AI recommendation logs)*
-![MP Dashboard](https://raw.githubusercontent.com/joegodwin04/CivicSense-AI/main/client/public/previews/dashboard.png)
+## 📄 License
 
-### 3. Geolocation Hotspot Map
-*(Consolidated incidents displayed dynamically over geographic constituency boundaries)*
-![Constituency Hotspots](https://raw.githubusercontent.com/joegodwin04/CivicSense-AI/main/client/public/previews/map_hotspots.png)
+This project is licensed under the MIT License.
