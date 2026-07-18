@@ -9,6 +9,8 @@ const logger = require('./utils/logger');
 
 // Initialize Express
 const app = express();
+// Trust Render's proxy
+app.set('trust proxy', 1);
 
 // --- Security & Utility Middlewares (Enterprise Standard) ---
 // Helmet helps secure Express apps by setting various HTTP headers
