@@ -10,8 +10,8 @@ async function run() {
       role: 'citizen'
     };
     const regRes = await axios.post('http://localhost:5000/api/auth/register', user);
-    const token = regRes.data.token;
-    console.log('Registered User:', regRes.data.user._id);
+    const token = regRes.data.data.token;
+    console.log('Registered User:', regRes.data.data._id);
 
     const submitRes = await axios.post('http://localhost:5000/api/citizen/submit', {
       description: 'Test duplicate logic ' + Date.now(),

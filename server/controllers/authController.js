@@ -1,14 +1,17 @@
 const User = require('../models/User');
-const jwt = require('jsonwebtoken');
+const jwt = require("jsonwebtoken");
 const { AppError } = require('../middleware/errorMiddleware');
 const asyncHandler = require('express-async-handler');
 
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'fallback_secret', {
-    expiresIn: '30d'
-  });
+  return jwt.sign(
+    { id },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: "7d",
+    }
+  );
 };
-
 // @desc    Register a new user (MP or Citizen)
 // @route   POST /api/auth/register
 // @access  Public
@@ -105,3 +108,4 @@ module.exports = {
   login,
   getMe
 };
+
