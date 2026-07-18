@@ -47,23 +47,23 @@ Behind the scenes, the system connects directly to **Google Gemini AI** to:
 
 ```mermaid
 graph TD
-    subgraph Client Application (Vite + React)
+    subgraph "Client Application - Vite + React"
         CP[Citizen Voice Portal] -->|FormData: Text, Images, Voice| APIClient[Axios API Client]
         MPD[MP Intelligence Dashboard] -->|Auth JWT token| APIClient
         Map[Google Maps Component] <--|Dynamic Marker Overlay| APIClient
     end
 
-    subgraph Backend Server (Express + Node.js)
+    subgraph "Backend Server - Express + Node.js"
         APIClient -->|Requests| App[Express app.js]
-        App -->|Multer File Parsing| Router[citizenRoutes / authRoutes / dashboardRoutes]
-        Router -->|Duplicate Detection: 150m radius & 14 days| GeoNear[MongoDB 2dsphere GeoNear]
+        App -->|Multer File Parsing| Router["citizenRoutes / authRoutes / dashboardRoutes"]
+        Router -->|Duplicate Detection: 150m radius and 14 days| GeoNear[MongoDB 2dsphere GeoNear]
         Router -->|Proximity Context| Haversine[Haversine Infra Filter]
         Router -->|Multimodal Input| Gemini[Google Gemini API]
     end
 
-    subgraph Database & Cloud
+    subgraph "Database and Cloud"
         GeoNear --> DB[(MongoDB Atlas)]
-        Gemini --> GeminiSDK[gemini-2.5-pro / gemini-2.5-flash]
+        Gemini --> GeminiSDK["gemini-2.5-pro / gemini-2.5-flash"]
     end
 ```
 
