@@ -32,6 +32,29 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// Automatically handle unauthorized errors (401) by clearing invalid/expired tokens
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      // Don't intercept login or registration requests to avoid interrupting normal login errors
+      const isAuthRequest = error.config && (
+        error.config.url.includes('/auth/login') || 
+        error.config.url.includes('/auth/register')
+      );
+      
+      if (!isAuthRequest) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const getImageUrl = (path) => {
   if (!path) return '';
   if (path.startsWith('http')) return path;

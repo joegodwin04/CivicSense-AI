@@ -27,6 +27,7 @@ const protect = asyncHandler(async (req, res, next) => {
 
       next();
     } catch (error) {
+      console.error('JWT Verification Error:', error);
       throw new AppError('Not authorized, token failed', 401);
     }
   }
