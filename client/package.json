@@ -19,6 +19,7 @@
     "leaflet": "^1.9.4",
     "lucide-react": "^1.23.0",
     "postcss": "^8.5.16",
+    "puppeteer": "^25.3.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-is": "^19.0.0",
