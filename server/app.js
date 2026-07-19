@@ -38,6 +38,19 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // HTTP Request Logging
 app.use(morgan('combined', { stream: { write: message => logger.info(message.trim()) } }));
 
+// Normalize double/multiple slashes in the path portion of the URL to prevent routing 404s (e.g. //api/auth/login -> /api/auth/login)
+app.use((req, res, next) => {
+  const queryIndex = req.url.indexOf('?');
+  let pathPart = queryIndex === -1 ? req.url : req.url.substring(0, queryIndex);
+  const queryPart = queryIndex === -1 ? '' : req.url.substring(queryIndex);
+  
+  if (pathPart.includes('//')) {
+    pathPart = pathPart.replace(/\/+/g, '/');
+    req.url = pathPart + queryPart;
+  }
+  next();
+});
+
 // Rate Limiting (Prevent DDoS / Brute Force on Government APIs)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes

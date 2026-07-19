@@ -1,15 +1,20 @@
 import axios from 'axios';
 
 const getBaseURL = () => {
+  let url = '';
   if (import.meta.env.VITE_API_URL) {
-    const url = import.meta.env.VITE_API_URL.trim();
-    return url.endsWith('/api') ? url : `${url}/api`;
+    url = import.meta.env.VITE_API_URL.trim();
+  } else if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    // Correct fallback URL to match the actual production API server domain
+    url = 'https://civicsense-ai-88cr.onrender.com';
+  } else {
+    url = 'http://127.0.0.1:5000';
   }
-  // Auto-detect production environment to prevent localhost fallback failures
-  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-    return 'https://civicsense-api.onrender.com/api';
-  }
-  return 'http://127.0.0.1:5000/api';
+
+  // Remove trailing slashes to prevent double slash routing issues (e.g. //api/auth/login)
+  url = url.replace(/\/+$/, '');
+
+  return url.endsWith('/api') ? url : `${url}/api`;
 };
 
 const api = axios.create({

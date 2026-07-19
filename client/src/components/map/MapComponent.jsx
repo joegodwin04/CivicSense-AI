@@ -125,7 +125,6 @@ function InnerMap({ requests, selectedRequest, setSelectedRequest }) {
       <Map
         defaultCenter={defaultPosition}
         defaultZoom={13}
-        mapId="DEMO_MAP_ID"
         disableDefaultUI={true}
         zoomControl={true}
         styles={[
