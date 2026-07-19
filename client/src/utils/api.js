@@ -52,7 +52,11 @@ api.interceptors.response.use(
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         if (typeof window !== 'undefined') {
-          window.location.href = '/login';
+          if (window.location.pathname.startsWith('/citizen')) {
+            window.location.href = '/login?role=citizen';
+          } else {
+            window.location.href = '/login?role=mp';
+          }
         }
       }
     }

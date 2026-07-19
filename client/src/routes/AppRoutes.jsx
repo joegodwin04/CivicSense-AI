@@ -7,6 +7,7 @@ import AdminDashboard from '../pages/AdminDashboard';
 import IssueDetails from '../pages/IssueDetails';
 import Login from '../pages/Login';
 import Register from '../pages/Register';
+// Obsolete citizen routes removed
 import PublicLayout from '../layouts/PublicLayout';
 import DashboardLayout from '../layouts/DashboardLayout';
 import { useApp } from '../context/AppContext';
@@ -16,7 +17,10 @@ function ProtectedRoute({ children, allowedRoles }) {
   const { token, user } = useApp();
 
   if (!token) {
-    return <Navigate to="/login" replace />;
+    if (allowedRoles && allowedRoles.includes('citizen')) {
+      return <Navigate to="/login?role=citizen" replace />;
+    }
+    return <Navigate to="/login?role=mp" replace />;
   }
 
   if (allowedRoles && (!user || !allowedRoles.includes(user.role))) {
@@ -40,11 +44,14 @@ export default function AppRoutes() {
       <Route
         path="/citizen"
         element={
-          <PublicLayout>
-            <CitizenPortal />
-          </PublicLayout>
+          <ProtectedRoute allowedRoles={['citizen']}>
+            <PublicLayout>
+              <CitizenPortal />
+            </PublicLayout>
+          </ProtectedRoute>
         }
       />
+
       <Route
         path="/login"
         element={

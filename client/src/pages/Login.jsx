@@ -1,18 +1,30 @@
 // src/pages/Login.jsx
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Lock, Mail, ArrowRight, Shield } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { Lock, Mail, ArrowRight } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import Button from '../components/ui/Button';
+import AuthLayout from '../components/auth/AuthLayout';
+import RoleSelector from '../components/auth/RoleSelector';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { login } = useApp();
+  
+  const location = useLocation();
   const navigate = useNavigate();
+  const { login } = useApp();
+
+  const queryParams = new URLSearchParams(location.search);
+  const defaultRole = queryParams.get('role') === 'mp' ? 'mp' : 'citizen';
+  
+  const [role, setRole] = useState(defaultRole);
+
+  useEffect(() => {
+    setError('');
+  }, [role]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,7 +35,10 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
-      const user = await login(email, password);
+      // The backend login is generic. We just pass email/password.
+      const user = await login(email, password, role);
+      
+      // Navigate based on actual authenticated role, not necessarily the tab selected
       if (user.role === 'admin') {
         navigate('/admin');
       } else if (user.role === 'mp') {
@@ -38,109 +53,92 @@ export default function Login() {
     }
   };
 
+  const isCitizen = role === 'citizen';
+  const title = isCitizen ? 'Citizen Portal' : 'MP Representative Portal';
+  const subtitle = isCitizen 
+    ? 'Sign in to submit, track and manage your civic reports.' 
+    : 'Secure access for constituency management and citizen issue monitoring.';
+
   return (
-    <div className="min-h-screen pt-20 flex items-center justify-center bg-[#0F2A44] relative px-4 text-[#E2E8F0]">
-      {/* Grid Pattern overlay */}
-      <div 
-        className="absolute inset-0 opacity-[0.02] pointer-events-none z-0"
-        style={{
-          backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)',
-          backgroundSize: '40px 40px',
-        }}
-      />
+    <AuthLayout title={title} subtitle={subtitle}>
+      <RoleSelector role={role} setRole={setRole} />
 
-      <motion.div
-        initial={{ opacity: 1, y: 0 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="w-full max-w-md relative z-10"
-      >
-        <div className="bg-[#122438] border border-white/10 rounded p-8">
-          
-          {/* Logo Header */}
-          <div className="flex flex-col items-center mb-8 text-center">
-            <div className="w-12 h-12 rounded-full bg-[#E0A030] flex items-center justify-center mb-4">
-              <Shield size={22} className="text-[#0F2A44]" fill="currentColor" />
-            </div>
-            <h2 className="text-2xl font-bold text-white tracking-tight font-serif">Welcome Back</h2>
-            <p className="text-[#94A3B8] text-xs uppercase font-bold tracking-wider mt-1">MP Representative Access Desk</p>
-          </div>
-
-          {error && (
-            <div className="mb-4 px-4 py-2.5 rounded bg-red-950/20 border border-red-500/25 text-red-300 text-xs text-center">
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Email */}
-            <div className="space-y-1.5 text-left">
-              <label className="block text-xs font-bold text-white uppercase tracking-wider">Email Address</label>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-[#94A3B8]">
-                  <Mail size={16} />
-                </span>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="representative@constituency.gov"
-                  required
-                  className="w-full bg-[#0B0F19] border border-white/10 rounded pl-10 pr-4 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:border-[#E0A030] transition-colors"
-                />
-              </div>
-            </div>
-
-            {/* Password */}
-            <div className="space-y-1.5 text-left">
-              <label className="block text-xs font-bold text-white uppercase tracking-wider">Password</label>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-[#94A3B8]">
-                  <Lock size={16} />
-                </span>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  className="w-full bg-[#0B0F19] border border-white/10 rounded pl-10 pr-4 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:border-[#E0A030] transition-colors"
-                />
-              </div>
-            </div>
-
-            {/* Submit Button */}
-            <Button
-              type="submit"
-              variant="primary"
-              size="lg"
-              isLoading={loading}
-              icon={ArrowRight}
-              iconPosition="right"
-              rounded="rounded"
-              className="w-full uppercase font-bold tracking-wider"
-            >
-              Sign In
-            </Button>
-          </form>
-
-          {/* Seed accounts mention */}
-          <div className="mt-6 pt-5 border-t border-white/10 text-center">
-            <p className="text-[#94A3B8] text-xs">
-              Demo Credentials: <span className="font-bold text-white">mp@civicsense.ai</span> / <span className="font-bold text-white">password123</span>
-            </p>
-          </div>
-
-          {/* Link to Register */}
-          <div className="mt-4 text-center">
-            <span className="text-[#94A3B8] text-xs">Need an account? </span>
-            <Link to="/register" className="text-[#E0A030] hover:text-[#F0B040] text-xs font-bold underline underline-offset-2 no-underline">
-              Register here
-            </Link>
-          </div>
-
+      {error && (
+        <div className="mb-6 px-4 py-3 rounded bg-red-950/30 border border-red-500/30 text-red-300 text-xs text-center font-medium">
+          {error}
         </div>
-      </motion.div>
-    </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="space-y-1.5 text-left">
+          <label className="block text-[11px] font-bold text-white/70 uppercase tracking-widest">
+            Email Address
+          </label>
+          <div className="relative">
+            <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-[#94A3B8]">
+              <Mail size={16} />
+            </span>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={isCitizen ? "citizen@example.com" : "representative@gov.in"}
+              required
+              className="w-full bg-[#0B0F19] border border-white/10 rounded-lg pl-10 pr-4 py-3 text-white placeholder-white/20 text-sm focus:outline-none focus:border-[#E0A030] focus:ring-1 focus:ring-[#E0A030] transition-all"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1.5 text-left">
+          <label className="block text-[11px] font-bold text-white/70 uppercase tracking-widest">
+            Password
+          </label>
+          <div className="relative">
+            <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-[#94A3B8]">
+              <Lock size={16} />
+            </span>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              className="w-full bg-[#0B0F19] border border-white/10 rounded-lg pl-10 pr-4 py-3 text-white placeholder-white/20 text-sm focus:outline-none focus:border-[#E0A030] focus:ring-1 focus:ring-[#E0A030] transition-all"
+            />
+          </div>
+        </div>
+
+        <Button
+          type="submit"
+          variant="primary"
+          size="lg"
+          isLoading={loading}
+          icon={ArrowRight}
+          iconPosition="right"
+          rounded="rounded-lg"
+          className="w-full mt-2 uppercase font-bold tracking-widest py-3.5 shadow-lg shadow-[#E0A030]/10"
+        >
+          Sign In to Portal
+        </Button>
+      </form>
+
+      {!isCitizen && (
+        <div className="mt-6 pt-5 border-t border-white/10 text-center">
+          <p className="text-[#94A3B8] text-[11px]">
+            Demo Credentials: <span className="font-bold text-white">mp@civicsense.ai</span> / <span className="font-bold text-white">password123</span>
+          </p>
+        </div>
+      )}
+
+      <div className="mt-6 text-center">
+        <span className="text-[#94A3B8] text-[13px]">New to CivicSense? </span>
+        <Link 
+          to={`/register?role=${role}`} 
+          className="text-[#E0A030] hover:text-[#F0B040] text-[13px] font-bold underline underline-offset-4 decoration-2 decoration-[#E0A030]/30 hover:decoration-[#E0A030] transition-all"
+        >
+          Create an account
+        </Link>
+      </div>
+    </AuthLayout>
   );
 }
