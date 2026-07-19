@@ -31,9 +31,9 @@ export function AppProvider({ children }) {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
   }, []);
 
-  const loginAction = useCallback(async (email, password) => {
+  const loginAction = useCallback(async (email, password, portalRole) => {
     try {
-      const response = await api.post('/auth/login', { email, password });
+      const response = await api.post('/auth/login', { email, password, portalRole });
       const { token: jwtToken, ...userData } = response.data.data;
       
       localStorage.setItem('token', jwtToken);

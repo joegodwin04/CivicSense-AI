@@ -16,7 +16,7 @@ const generateToken = (id) => {
 // @route   POST /api/auth/register
 // @access  Public
 const register = asyncHandler(async (req, res) => {
-  const { name, email, password, role, constituency } = req.body;
+  const { name, email, password, role, constituency, phoneNumber } = req.body;
 
   const userExists = await User.findOne({ email });
   if (userExists) {
@@ -36,6 +36,7 @@ const register = asyncHandler(async (req, res) => {
     password,
     role,
     constituency,
+    phoneNumber,
     verified: role === 'mp' ? false : true
   });
 
@@ -62,7 +63,7 @@ const register = asyncHandler(async (req, res) => {
 // @route   POST /api/auth/login
 // @access  Public
 const login = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, portalRole } = req.body;
 
   if (!email || !password) {
     throw new AppError('Please provide an email and password', 400);
@@ -72,6 +73,17 @@ const login = asyncHandler(async (req, res) => {
   const user = await User.findOne({ email }).select('+password');
 
   if (user && (await user.matchPassword(password))) {
+    // Role validation based on requested portal
+    if (portalRole === 'citizen') {
+      if (user.role !== 'citizen') {
+        throw new AppError('This account belongs to the MP Representative Portal. Please sign in using the MP Portal.', 403);
+      }
+    } else if (portalRole === 'mp') {
+      if (user.role === 'citizen') {
+        throw new AppError('This account belongs to the Citizen Portal. Please sign in using the Citizen Portal.', 403);
+      }
+    }
+
     if (user.role === 'mp' && !user.verified) {
       throw new AppError('Your MP account is pending administrator approval.', 403);
     }
